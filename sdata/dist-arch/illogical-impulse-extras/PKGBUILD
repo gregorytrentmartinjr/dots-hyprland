@@ -1,0 +1,24 @@
+pkgname=illogical-impulse-extras
+pkgver=1.0
+pkgrel=6
+pkgdesc='Illogical Impulse Extra Software'
+arch=(any)
+license=(None)
+depends=(
+  nwg-displays
+  gnome-disk-utility
+  gnome-software
+  gnome-calculator
+  gnome-calendar
+  simple-scan
+  gnome-font-viewer
+  eog
+  cartridges
+  impression
+  libreoffice-fresh
+  mpv
+  satty
+  snapper
+  snapper-gui
+  krita
+)
