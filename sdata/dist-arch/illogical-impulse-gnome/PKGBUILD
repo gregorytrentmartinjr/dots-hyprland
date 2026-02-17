@@ -11,6 +11,5 @@ depends=(
   gvfs-mtp
   fuse2
   gnome-desktop-thumbnailer
-  gdk-pixbuf
   ffmpegthumbnailer
 )
