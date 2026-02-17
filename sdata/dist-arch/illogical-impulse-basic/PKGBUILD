@@ -14,7 +14,6 @@ depends=(
   ripgrep
   jq
   xdg-user-dirs
-  nautilus
   # Used in install script
   rsync
   go-yq # https://github.com/mikefarah/yq
