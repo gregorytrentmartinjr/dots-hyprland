@@ -10,6 +10,5 @@ depends=(
   gvfs-smb
   gvfs-mtp
   fuse2
-  gnome-desktop-thumbnailer
   ffmpegthumbnailer
 )
