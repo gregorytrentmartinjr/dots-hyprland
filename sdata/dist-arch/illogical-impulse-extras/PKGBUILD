@@ -5,6 +5,7 @@ pkgdesc='Illogical Impulse Extra Software'
 arch=(any)
 license=(None)
 depends=(
+  google-chrome
   nwg-displays
   gnome-disk-utility
   gnome-software
