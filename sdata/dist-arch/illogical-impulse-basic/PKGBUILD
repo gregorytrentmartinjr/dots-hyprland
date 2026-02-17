@@ -14,6 +14,10 @@ depends=(
   ripgrep
   jq
   xdg-user-dirs
+  ntfs-3g
+  dosfstools
+  libxcrypt-compat
+  fuse2
   # Used in install script
   rsync
   go-yq # https://github.com/mikefarah/yq
