@@ -5,15 +5,16 @@ pkgdesc='Illogical Impulse Extra Software'
 arch=(any)
 license=(None)
 depends=(
+  flatpack
   google-chrome
   nwg-displays
+  resources
   gnome-disk-utility
   gnome-software
   gnome-calculator
   gnome-calendar
   simple-scan
   gnome-font-viewer
-  eog
   impression
   libreoffice-fresh
   mpv
@@ -21,4 +22,5 @@ depends=(
   snapper
   snapper-gui
   krita
+  fastfetch
 )
