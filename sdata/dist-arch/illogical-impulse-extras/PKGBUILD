@@ -14,7 +14,6 @@ depends=(
   simple-scan
   gnome-font-viewer
   eog
-  cartridges
   impression
   libreoffice-fresh
   mpv
