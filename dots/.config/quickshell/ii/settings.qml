@@ -29,11 +29,6 @@ ApplicationWindow {
             component: "modules/settings/QuickConfig.qml"
         },
         {
-            name: Translation.tr("Connectivity"),
-            icon: "settings_ethernet",
-            component: "modules/settings/ConnectivityConfig.qml"
-        },
-        {
             name: Translation.tr("General"),
             icon: "browse",
             component: "modules/settings/GeneralConfig.qml"
@@ -53,6 +48,11 @@ ApplicationWindow {
             name: Translation.tr("Interface"),
             icon: "bottom_app_bar",
             component: "modules/settings/InterfaceConfig.qml"
+        },
+        {
+            name: Translation.tr("Connectivity"),
+            icon: "settings_ethernet",
+            component: "modules/settings/ConnectivityConfig.qml"
         },
         {
             name: Translation.tr("Services"),
