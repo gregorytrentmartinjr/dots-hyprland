@@ -5,6 +5,7 @@ pkgdesc='Illogical Impulse Gnome Dependencies'
 arch=(any)
 license=(None)
 depends=(
+  qt6ct
   nautilus
   gvfs
   gvfs-smb
