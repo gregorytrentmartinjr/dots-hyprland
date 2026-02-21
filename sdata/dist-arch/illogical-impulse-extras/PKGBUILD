@@ -22,4 +22,5 @@ depends=(
   snapper-gui
   krita
   fastfetch
+  mpvpaper
 )

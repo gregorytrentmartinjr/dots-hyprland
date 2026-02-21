@@ -20,6 +20,7 @@ depends=(
   fuse2
   less
   clinfo
+  fastfetch
   # Used in install script
   rsync
   go-yq # https://github.com/mikefarah/yq
