@@ -324,8 +324,8 @@ Singleton {
 
             property JsonObject dock: JsonObject {
                 property bool enable: false
-                property bool monochromeIcons: true
                 property real height: 60
+                property bool monochromeIcons: false
                 property real hoverRegionHeight: 2
                 property bool pinnedOnStartup: false
                 property bool hoverToReveal: true // When false, only reveals on empty workspace
