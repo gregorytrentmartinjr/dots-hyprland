@@ -316,6 +316,8 @@ Item { // Bar content region
                 }
             }
 
+            TimersTray {}
+
             SysTray {
                 visible: root.useShortenedForm === 0
                 Layout.fillWidth: false
