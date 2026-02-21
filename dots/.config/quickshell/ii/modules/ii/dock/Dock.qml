@@ -14,6 +14,7 @@ import Quickshell.Hyprland
 
 Scope { // Scope
     id: root
+    property bool pinned: Config.options?.dock.enable ?? true
     property bool pinned: Config.options?.dock.pinnedOnStartup ?? false
 
     Variants {
