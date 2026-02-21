@@ -18,6 +18,8 @@ depends=(
   dosfstools
   libxcrypt-compat
   fuse2
+  less
+  clinfo
   # Used in install script
   rsync
   go-yq # https://github.com/mikefarah/yq
