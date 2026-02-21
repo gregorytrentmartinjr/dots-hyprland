@@ -16,9 +16,20 @@ DockButton {
     property real countDotWidth: 10
     property real countDotHeight: 4
     property bool appIsActive: appToplevel.toplevels.find(t => (t.activated == true)) !== undefined
+    
+    property int _desktopEntriesUpdateTrigger: 0
 
     readonly property bool isSeparator: appToplevel.appId === "SEPARATOR"
-    readonly property var desktopEntry: DesktopEntries.heuristicLookup(appToplevel.appId)
+    property var desktopEntry: DesktopEntries.heuristicLookup(appToplevel.appId)
+    
+    Connections {
+        target: DesktopEntries
+        function onApplicationsChanged() {
+            _desktopEntriesUpdateTrigger++;
+            root.desktopEntry = DesktopEntries.heuristicLookup(root.appToplevel.appId);
+        }
+    }
+
     enabled: !isSeparator
     
     property real hoverScale: 1.0
@@ -105,7 +116,10 @@ DockButton {
                 }
                 active: !root.isSeparator
                 sourceComponent: IconImage {
-                    source: Quickshell.iconPath(AppSearch.guessIcon(appToplevel.appId), "image-missing")
+                    source: {
+                        root._desktopEntriesUpdateTrigger;
+                        return Quickshell.iconPath(AppSearch.guessIcon(appToplevel.appId), "image-missing");
+                    }
                     implicitSize: root.iconSize
                 }
             }
