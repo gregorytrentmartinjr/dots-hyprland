@@ -99,12 +99,12 @@ ContentPage {
                         {
                             displayName: Translation.tr("Hug"),
                             icon: "line_curve",
-                            value: 0
+                            value: 1
                         },
                         {
                             displayName: Translation.tr("Float"),
                             icon: "page_header",
-                            value: 1
+                            value: 0
                         },
                         {
                             displayName: Translation.tr("Rect"),
