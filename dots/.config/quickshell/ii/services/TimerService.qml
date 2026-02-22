@@ -109,8 +109,8 @@ Singleton {
         let newLapDuration = baseDuration + newAdjustment;
         let newSecondsLeft = pomodoroSecondsLeft + seconds;
 
-        // Don't allow lap duration below 1 minute or time to go negative
-        if (newLapDuration >= 60 && newSecondsLeft > 0) {
+        // Don't allow time to go negative or to zero
+        if (newLapDuration >= 1 && newSecondsLeft > 0) {
             pomodoroTimeAdjustment = newAdjustment;
             if (pomodoroRunning) {
                 refreshPomodoro();
