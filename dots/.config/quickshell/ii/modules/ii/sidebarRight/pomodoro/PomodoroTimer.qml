@@ -33,12 +33,29 @@ Item {
                 spacing: 0
 
                 Item {
+                    id: timeItem
                     Layout.alignment: Qt.AlignHCenter
-                    implicitWidth: timeText.implicitWidth
-                    implicitHeight: timeText.implicitHeight
+                    implicitWidth: 120
+                    implicitHeight: 50
+
+                    property bool editMode: false
+
+                    function applyEdit() {
+                        editMode = false;
+                        let raw = timeField.text.replace(/[^0-9:]/g, "");
+                        let parts = raw.split(":");
+                        let newSeconds = 0;
+                        if (parts.length >= 2) {
+                            newSeconds = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+                        } else {
+                            newSeconds = parseInt(parts[0]) || 0;
+                        }
+                        let delta = newSeconds - TimerService.pomodoroSecondsLeft;
+                        TimerService.adjustPomodoroTime(delta);
+                    }
 
                     StyledText {
-                        id: timeText
+                        visible: !timeItem.editMode
                         anchors.centerIn: parent
                         text: {
                             let minutes = Math.floor(TimerService.pomodoroSecondsLeft / 60).toString().padStart(2, '0');
@@ -51,20 +68,50 @@ Item {
 
                     MouseArea {
                         anchors.fill: parent
-                        acceptedButtons: Qt.MiddleButton
+                        visible: !timeItem.editMode
+                        cursorShape: Qt.IBeamCursor
+                        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+
                         onClicked: (mouse) => {
                             if (mouse.button === Qt.MiddleButton) {
                                 if (mouse.modifiers & Qt.ShiftModifier) {
-                                    // Shift + middle click: decrement by 10 minutes
                                     TimerService.adjustPomodoroTime(-600);
                                 } else {
-                                    // Middle click: increment by 10 minutes
                                     TimerService.adjustPomodoroTime(600);
                                 }
+                            } else if (mouse.button === Qt.LeftButton) {
+                                let minutes = Math.floor(TimerService.pomodoroSecondsLeft / 60).toString().padStart(2, '0');
+                                let seconds = Math.floor(TimerService.pomodoroSecondsLeft % 60).toString().padStart(2, '0');
+                                timeField.text = `${minutes}:${seconds}`;
+                                timeItem.editMode = true;
+                                timeField.forceActiveFocus();
+                                timeField.selectAll();
                             }
                         }
                     }
+
+                    StyledTextInput {
+                        id: timeField
+                        visible: timeItem.editMode
+                        anchors.centerIn: parent
+                        width: parent.width
+                        horizontalAlignment: TextInput.AlignHCenter
+                        font.pixelSize: 40
+                        font.hintingPreference: Font.PreferDefaultHinting
+                        renderType: Text.NativeRendering
+                        color: Appearance.m3colors.m3onSurface
+
+                        Keys.onReturnPressed: timeItem.applyEdit()
+                        Keys.onEnterPressed: timeItem.applyEdit()
+                        Keys.onEscapePressed: timeItem.editMode = false
+
+                        onActiveFocusChanged: {
+                            if (!activeFocus && timeItem.editMode)
+                                timeItem.applyEdit();
+                        }
+                    }
                 }
+
                 StyledText {
                     Layout.alignment: Qt.AlignHCenter
                     text: TimerService.pomodoroLongBreak ? Translation.tr("Long break") : TimerService.pomodoroBreak ? Translation.tr("Break") : Translation.tr("Focus")
