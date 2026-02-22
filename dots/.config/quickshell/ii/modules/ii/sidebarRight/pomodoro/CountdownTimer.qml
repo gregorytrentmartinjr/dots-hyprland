@@ -62,7 +62,7 @@ Item {
                             return `${minutes}:${seconds}`;
                         }
                         font.pixelSize: 40
-                        color: TimerService.countdownFinished ? Appearance.colors.colPrimary : Appearance.m3colors.m3onSurface
+                        color: Appearance.m3colors.m3onSurface
                     }
 
                     MouseArea {
@@ -107,7 +107,7 @@ Item {
 
                 StyledText {
                     Layout.alignment: Qt.AlignHCenter
-                    text: TimerService.countdownFinished ? Translation.tr("Done") : TimerService.countdownRunning ? Translation.tr("Running") : Translation.tr("Timer")
+                    text: TimerService.countdownRunning ? Translation.tr("Running") : Translation.tr("Timer")
                     font.pixelSize: Appearance.font.pixelSize.normal
                     color: Appearance.colors.colSubtext
                 }
@@ -122,13 +122,12 @@ Item {
                 contentItem: StyledText {
                     anchors.centerIn: parent
                     horizontalAlignment: Text.AlignHCenter
-                    text: TimerService.countdownRunning ? Translation.tr("Pause") : TimerService.countdownFinished ? Translation.tr("Done") : (TimerService.countdownSecondsLeft === TimerService.countdownDuration) ? Translation.tr("Start") : Translation.tr("Resume")
+                    text: TimerService.countdownRunning ? Translation.tr("Pause") : (TimerService.countdownSecondsLeft === TimerService.countdownDuration) ? Translation.tr("Start") : Translation.tr("Resume")
                     color: TimerService.countdownRunning ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnPrimary
                 }
                 implicitHeight: 35
                 implicitWidth: 90
                 font.pixelSize: Appearance.font.pixelSize.larger
-                enabled: !TimerService.countdownFinished
                 onClicked: TimerService.toggleCountdown()
                 colBackground: TimerService.countdownRunning ? Appearance.colors.colSecondaryContainer : Appearance.colors.colPrimary
                 colBackgroundHover: TimerService.countdownRunning ? Appearance.colors.colSecondaryContainer : Appearance.colors.colPrimary
@@ -139,7 +138,7 @@ Item {
                 implicitWidth: 90
 
                 onClicked: TimerService.resetCountdown()
-                enabled: TimerService.countdownSecondsLeft < TimerService.countdownDuration || TimerService.countdownFinished
+                enabled: TimerService.countdownSecondsLeft < TimerService.countdownDuration
 
                 font.pixelSize: Appearance.font.pixelSize.larger
                 colBackground: Appearance.colors.colErrorContainer

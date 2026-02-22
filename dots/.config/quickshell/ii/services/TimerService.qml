@@ -35,7 +35,6 @@ Singleton {
     property bool countdownRunning: Persistent.states.timer.countdown.running
     property int countdownDuration: Persistent.states.timer.countdown.duration
     property int countdownSecondsLeft: countdownDuration
-    property bool countdownFinished: false
 
     // General
     Component.onCompleted: {
@@ -170,13 +169,11 @@ Singleton {
         let elapsed = getCurrentTimeInSeconds() - Persistent.states.timer.countdown.start;
         let left = countdownDuration - elapsed;
         if (left <= 0) {
-            countdownSecondsLeft = 0;
-            countdownFinished = true;
-            Persistent.states.timer.countdown.running = false;
             if (Config.options.sounds.pomodoro) {
                 Audio.playSystemSound("alarm-clock-elapsed");
             }
             Quickshell.execDetached(["notify-send", "Timer", Translation.tr("Timer finished!"), "-a", "Shell"]);
+            resetCountdown();
         } else {
             countdownSecondsLeft = left;
         }
@@ -191,7 +188,6 @@ Singleton {
     }
 
     function toggleCountdown() {
-        if (countdownFinished) return;
         Persistent.states.timer.countdown.running = !countdownRunning;
         if (Persistent.states.timer.countdown.running) {
             Persistent.states.timer.countdown.start = getCurrentTimeInSeconds() - (countdownDuration - countdownSecondsLeft);
@@ -201,7 +197,6 @@ Singleton {
     function resetCountdown() {
         Persistent.states.timer.countdown.running = false;
         countdownSecondsLeft = countdownDuration;
-        countdownFinished = false;
     }
 
     function setCountdownTime(seconds) {
@@ -209,7 +204,6 @@ Singleton {
         Persistent.states.timer.countdown.duration = newSeconds;
         countdownDuration = newSeconds;
         countdownSecondsLeft = newSeconds;
-        countdownFinished = false;
         Persistent.states.timer.countdown.running = false;
     }
 }
