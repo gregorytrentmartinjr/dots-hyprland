@@ -385,7 +385,7 @@ Singleton {
                 property bool pinnedOnStartup: false
                 property bool hoverToReveal: true // When false, only reveals on empty workspace
                 property list<string> pinnedApps: [ // IDs of pinned entries
-                    "org.kde.dolphin", "kitty",]
+                    "google-chrome-stable", "nautilus", "vlc", "spotify", "gnome-text-editor", "kitty",]
                 property list<string> ignoredAppRegexes: []
             }
 
