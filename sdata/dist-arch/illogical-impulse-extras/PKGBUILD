@@ -19,7 +19,9 @@ depends=(
   gnome-font-viewer
   impression
   libreoffice-fresh
-  mpv
+  gnome-text-editor
+  vlc
+  spotify
   satty
   snapper
   snapper-gui
