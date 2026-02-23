@@ -117,7 +117,7 @@ Singleton {
                     property string expressive: "Space Grotesk"
                 }
                 property JsonObject transparency: JsonObject {
-                    property bool enable: false
+                    property bool enable: true
                     property bool automatic: true
                     property real backgroundTransparency: 0.11
                     property real contentTransparency: 0.57
@@ -234,7 +234,7 @@ Singleton {
                     }
                 }
                 property bool bottom: false // Instead of top
-                property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle
+                property int cornerStyle: 1 // 0: Hug | 1: Float | 2: Plain rectangle
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
                 property bool borderless: false // true for no grouping of items
                 property string topLeftIcon: "spark" // Options: "distro" or any icon name in ~/.config/quickshell/ii/assets/icons
@@ -252,11 +252,11 @@ Singleton {
                 property JsonObject utilButtons: JsonObject {
                     property bool showScreenSnip: true
                     property bool showColorPicker: false
-                    property bool showMicToggle: false
-                    property bool showKeyboardToggle: true
-                    property bool showDarkModeToggle: true
+                    property bool showMicToggle: true
+                    property bool showKeyboardToggle: false
+                    property bool showDarkModeToggle: false
                     property bool showPerformanceProfileToggle: false
-                    property bool showScreenRecord: false
+                    property bool showScreenRecord: true
                 }
                 property JsonObject workspaces: JsonObject {
                     property bool monochromeIcons: true
@@ -324,7 +324,7 @@ Singleton {
 
             property JsonObject dock: JsonObject {
                 property bool enable: false
-                property bool monochromeIcons: true
+                property bool monochromeIcons: false
                 property real height: 60
                 property real hoverRegionHeight: 2
                 property bool pinnedOnStartup: false
@@ -559,7 +559,7 @@ Singleton {
 
             property JsonObject time: JsonObject {
                 // https://doc.qt.io/qt-6/qtime.html#toString
-                property string format: "hh:mm"
+                property string format: "h:mm AP"
                 property string shortDateFormat: "dd/MM"
                 property string dateWithYearFormat: "dd/MM/yyyy"
                 property string dateFormat: "ddd, dd/MM"

@@ -50,6 +50,11 @@ ApplicationWindow {
             component: "modules/settings/InterfaceConfig.qml"
         },
         {
+            name: Translation.tr("Connectivity"),
+            icon: "settings_ethernet",
+            component: "modules/settings/ConnectivityConfig.qml"
+        },
+        {
             name: Translation.tr("Services"),
             icon: "settings",
             component: "modules/settings/ServicesConfig.qml"
@@ -65,7 +70,17 @@ ApplicationWindow {
             component: "modules/settings/About.qml"
         }
     ]
-    property int currentPage: 0
+    
+    // Read deep-linking from environment variables (set by dialogs)
+    property int initialPage: {
+        const envPage = Quickshell.env("QS_SETTINGS_PAGE");
+        return envPage ? parseInt(envPage) : 0;
+    }
+    property int initialTab: {
+        const envTab = Quickshell.env("QS_SETTINGS_TAB");
+        return envTab ? parseInt(envTab) : 0;
+    }
+    property int currentPage: initialPage
 
     visible: true
     onClosing: Qt.quit()
@@ -239,9 +254,7 @@ ApplicationWindow {
                     opacity: 1.0
 
                     active: Config.ready
-                    Component.onCompleted: {
-                        source = root.pages[0].component
-                    }
+                    source: Config.ready ? root.pages[root.currentPage].component : ""
 
                     Connections {
                         target: root

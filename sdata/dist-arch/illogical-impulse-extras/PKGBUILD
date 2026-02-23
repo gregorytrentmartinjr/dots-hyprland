@@ -1,0 +1,28 @@
+pkgname=illogical-impulse-extras
+pkgver=1.0
+pkgrel=6
+pkgdesc='Illogical Impulse Extra Software'
+arch=(any)
+license=(None)
+depends=(
+  google-chrome
+  nwg-displays
+  resources
+  gnome-disk-utility
+  gnome-software
+  appstream
+  appstream-glib
+  flatpak
+  gnome-calculator
+  gnome-calendar
+  simple-scan
+  gnome-font-viewer
+  impression
+  libreoffice-fresh
+  mpv
+  satty
+  snapper
+  snapper-gui
+  krita
+  fastfetch
+)
