@@ -5,7 +5,7 @@ pkgdesc='Illogical Impulse Hyprland relatated packages'
 arch=(any)
 license=(None)
 depends=(
-  hyprland-git
-  hyprsunset-git
+  hyprland
+  hyprsunset
   wl-clipboard
 )
