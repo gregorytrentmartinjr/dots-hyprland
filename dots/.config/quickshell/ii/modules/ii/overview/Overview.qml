@@ -267,7 +267,7 @@ Scope {
                 const scrollingDown = event.angleDelta.y < 0;
                 const scrollingUp   = event.angleDelta.y > 0;
 
-                if (!appDrawer.expanded && scrollingDown) {
+                if (!appDrawer.expanded && scrollingDown && panelWindow.searchingText === "") {
                     appDrawer.expanded = true;
                     flickable.contentY = 0;
                     event.accepted = true;
