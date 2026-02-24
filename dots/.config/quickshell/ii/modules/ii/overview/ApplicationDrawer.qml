@@ -31,14 +31,13 @@ Item {
     }
     property int columns: {
         if (availableWidth > 0) {
-            // Calculate columns based on available width with proper spacing
-            const cellWidth = 90; // Desired cell width including spacing
+            const cellWidth = root.expanded ? 135 : 90;
             return Math.max(6, Math.floor((availableWidth - 60) / cellWidth));
         }
-        return Math.max(6, Math.floor((width - 60) / 90));
+        return Math.max(6, Math.floor((width - 60) / (root.expanded ? 135 : 90)));
     }
-    property real iconSize: 50
-    property real spacing: 30
+    property real iconSize: root.expanded ? 75 : 50
+    property real spacing: root.expanded ? 45 : 30
     
     // Context menu state
     property var contextMenuApp: null
@@ -110,21 +109,35 @@ Item {
         pathFinderProcess.running = true;
     }
     
+    // Scroll the inner app grid by the given normalised delta and factor.
+    // Called by Overview's wheelOverlay so all wheel handling stays in one place.
+    function scrollGrid(delta, scrollFactor) {
+        const maxY    = Math.max(0, appGrid.contentHeight - appGrid.height);
+        const targetY = Math.max(0, Math.min(appGrid.contentY - delta * scrollFactor, maxY));
+        appGrid.contentY = targetY;
+    }
+
+    // Returns true when the grid is scrolled to its very top.
+    function isGridAtTop() {
+        return appGrid.contentY <= 0;
+    }
+
     // Process to find executable path
     Process {
         id: pathFinderProcess
         property var app: null
         property string execName: ""
-        
+        property string output: ""
+
         command: ["which", execName]
-        
+
+        stdout: SplitParser { onRead: data => pathFinderProcess.output += data }
+
         onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0 && stdout.length > 0) {
-                Quickshell.clipboardText = stdout.trim();
-            } else {
-                // Fallback to just the exec name
-                Quickshell.clipboardText = execName;
-            }
+            const result = pathFinderProcess.output.trim();
+            Quickshell.clipboardText = (exitCode === 0 && result.length > 0)
+                ? result : pathFinderProcess.execName;
+            pathFinderProcess.output = "";
         }
     }
     
@@ -253,20 +266,22 @@ Item {
                 }
             }
             
-            // App Grid
-            ScrollView {
-                id: scrollView
+            // App Grid — no ScrollView wrapper.
+            // The outer Overview wheelOverlay delegates scroll here via
+            // scrollGrid(); GridView does not handle its own scroll events.
+            Item {
+                id: gridContainer
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumHeight: root.expanded ? 100 : 40
                 clip: true
-                
+
                 GridView {
                     id: appGrid
                     anchors.fill: parent
-                    cellWidth: Math.max(80, (parent.width - (root.columns - 1) * root.spacing - 30) / root.columns)
+                    cellWidth: Math.max(root.expanded ? 120 : 80, (parent.width - (root.columns - 1) * root.spacing - 30) / root.columns)
                     cellHeight: cellWidth * 1.3
-                    interactive: root.expanded || contentHeight > height
+                    interactive: false
                     boundsBehavior: Flickable.StopAtBounds
                     
                     model: ScriptModel {

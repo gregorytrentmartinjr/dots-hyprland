@@ -20,22 +20,20 @@ Scope {
         property string searchingText: ""
         readonly property HyprlandMonitor monitor: Hyprland.monitorFor(panelWindow.screen)
         property bool monitorIsFocused: (Hyprland.focusedMonitor?.id == monitor?.id)
-        visible: GlobalStates.overviewOpen
+        // Stay visible during fade-out; hideTimer cuts visibility after animation
+        visible: GlobalStates.overviewOpen || contentFade.opacity > 0
 
         WlrLayershell.namespace: "quickshell:overview"
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.keyboardFocus: GlobalStates.overviewOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
         color: "transparent"
 
-        mask: Region {
-            item: GlobalStates.overviewOpen ? flickable : null
-        }
-
+        // Full-screen so the dim overlay covers app windows behind the overview.
         anchors {
             top: true
             bottom: true
-            left: !(Config?.options.overview.enable ?? true)
-            right: !(Config?.options.overview.enable ?? true)
+            left: true
+            right: true
         }
 
         Connections {
@@ -67,13 +65,30 @@ Scope {
                 GlobalStates.overviewOpen = false;
             }
         }
-        implicitWidth: flickable.contentWidth
-        implicitHeight: flickable.contentHeight
-
         function setSearchingText(text) {
             searchWidget.setSearchingText(text);
             searchWidget.focusFirstItem();
         }
+
+        // Wraps all content so a single opacity animation fades everything together
+        Item {
+            id: contentFade
+            anchors.fill: parent
+            opacity: GlobalStates.overviewOpen ? 1 : 0
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                }
+            }
+
+            // Full-screen dim overlay — fixed opacity; contentFade handles the fade
+            Rectangle {
+                anchors.fill: parent
+                color: Appearance.colors.colLayer0
+                opacity: 0.90
+            }
 
         StyledFlickable {
             id: flickable
@@ -81,135 +96,37 @@ Scope {
             contentWidth: columnLayout.implicitWidth
             contentHeight: columnLayout.implicitHeight
             clip: true
-            visible: GlobalStates.overviewOpen
+            visible: true
+            // DragAndOvershootBounds lets a touch drag overshoot past the top
+            // (contentY < 0), which we use as a fallback collapse trigger.
             boundsBehavior: Flickable.DragAndOvershootBounds
-            
-            property real lastContentY: 0
-            property bool isScrollingUp: false
-            property int scrollUpAttempts: 0
-                
-            // Detect scroll attempts when at the top
-            onMovementStarted: {
-                    scrollUpAttempts = 0;
-            }
-                
-            onMovementEnded: {
-                // If we tried to scroll up while at/near the top, collapse
-                if (appDrawer.expanded && scrollUpAttempts > 0 && contentY < 50) {
-                    appDrawer.expanded = false;
-                    appDrawer.searchText = "";
-                    Qt.callLater(() => {
-                        flickable.contentY = 0;
-                    });
-                }
-                scrollUpAttempts = 0;
-                isScrollingUp = false;
-            }
 
-            // Track wheel events at the top to collapse
-            WheelHandler {
-                id: wheelHandler
-                target: null
-                onWheel: (event) => {
-                    // If expanded, at/near top, and scrolling up, collapse
-                    if (appDrawer.expanded && flickable.contentY < 50 && event.angleDelta.y > 0) {
-                        appDrawer.expanded = false;
-                        appDrawer.searchText = "";
-                        Qt.callLater(() => {
-                            flickable.contentY = 0;
-                        });
-                    }
-                }
-            }
-            
             onContentYChanged: {
-                // Track scroll direction
-                if (contentY < lastContentY) {
-                    isScrollingUp = true;
-                    if (appDrawer.expanded && contentY < 50) {
-                        scrollUpAttempts++;
-                    }
-                } else {
-                    isScrollingUp = false;
-                }
-                
-                // When expanded and user scrolls/overshoots past the top, collapse back to initial state
-                if (appDrawer.expanded && contentY < -10) {
+                // Drag-overshoot past the top while expanded → collapse.
+                // Wheel-based collapse is handled by wheelOverlay below.
+                if (appDrawer.expanded && contentY < -30) {
                     appDrawer.expanded = false;
                     appDrawer.searchText = "";
-                    Qt.callLater(() => {
-                        flickable.contentY = 0;
-                    });
-                    lastContentY = contentY;
-                    return;
+                    Qt.callLater(() => { flickable.contentY = 0; });
                 }
-                
-                lastContentY = contentY;
-                
-                // Expand drawer when user scrolls down significantly
-                // Calculate the height of content above the drawer (when not expanded)
-                const searchWidgetHeight = appDrawer.expanded ? 0 : (searchWidget.implicitHeight || 0);
-                const overviewWidgetHeight = (appDrawer.expanded || !overviewLoader.item || !overviewLoader.item.visible) ? 
-                    0 : (overviewLoader.item.implicitHeight || 0);
-                const spacing = 20; // ColumnLayout spacing
-                const topContentHeight = searchWidgetHeight + overviewWidgetHeight + (searchWidgetHeight > 0 || overviewWidgetHeight > 0 ? spacing : 0);
-                
-                // Expand when scrolled past 40% of the top content, or when near bottom
-                const scrollThreshold = Math.max(100, topContentHeight * 0.4);
-                const distanceFromBottom = contentHeight - contentY - height;
-                const nearBottom = distanceFromBottom < 250;
-                
-                const shouldExpand = (contentY > scrollThreshold) || nearBottom;
-                    
-                if (shouldExpand !== appDrawer.expanded) {
-                    appDrawer.expanded = shouldExpand;
-                    // When expanding, scroll to position drawer at top without overlapping
-                    if (shouldExpand && topContentHeight > 0) {
-                        Qt.callLater(() => {
-                            // Calculate proper scroll position
-                            // We want to hide the collapsed content and show drawer at the top
-                            // Account for the spacing to keep drawer below any UI elements
-                            const targetY = topContentHeight + spacing;
-                            flickable.contentY = Math.max(0, Math.min(targetY, flickable.contentHeight - flickable.height));
-                        });
-                    } else if (!shouldExpand) {
-                        // When collapsing, return to top
-                        Qt.callLater(() => {
-                            flickable.contentY = 0;
-                        });
-                    }
-                }
-            }
-
-            // Also check on contentHeight change (when drawer expands/collapses)
-            onContentHeightChanged: {
-                Qt.callLater(() => {
-                    if (appDrawer.expanded) {
-                        // When expanded, ensure we're scrolled to properly position drawer
-                        const searchWidgetHeight = searchWidget.implicitHeight || 0;
-                        const overviewWidgetHeight = (overviewLoader.item && overviewLoader.item.visible) ? 
-                            (overviewLoader.item.implicitHeight || 0) : 0;
-                        const spacing = 20;
-                        const topContentHeight = searchWidgetHeight + overviewWidgetHeight;
-                        
-                        // Only adjust if we're not already at the right position
-                        const targetY = topContentHeight + spacing;
-                        const tolerance = 5;
-                        if (Math.abs(contentY - targetY) > tolerance) {
-                            flickable.contentY = Math.max(0, Math.min(targetY, flickable.contentHeight - flickable.height));
-                        }
-                    }
-                });
             }
             
             ColumnLayout {
                 id: columnLayout
                 width: flickable.width
                 spacing: 20
+                property real cachedOverviewWidth: Math.min(1200, flickable.width - 40)
 
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Escape) {
-                        GlobalStates.overviewOpen = false;
+                        if (appDrawer.expanded) {
+                            appDrawer.expanded = false;
+                            appDrawer.searchText = "";
+                            Qt.callLater(() => { flickable.contentY = 0; });
+                            columnLayout.forceActiveFocus();
+                        } else {
+                            GlobalStates.overviewOpen = false;
+                        }
                     } else if (event.key === Qt.Key_Left) {
                         if (!panelWindow.searchingText)
                             Hyprland.dispatch("workspace r-1");
@@ -281,6 +198,8 @@ Scope {
                             easing.bezierCurve: Appearance.animation.elementResize.bezierCurve
                         }
                     }
+                    // Cache width so the drawer can match it after this loader deactivates
+                    onWidthChanged: if (width > 0) columnLayout.cachedOverviewWidth = width
                     sourceComponent: OverviewWidget {
                         screen: panelWindow.screen
                         visible: (panelWindow.searchingText == "")
@@ -290,8 +209,10 @@ Scope {
                 ApplicationDrawer {
                     id: appDrawer
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.fillWidth: appDrawer.expanded
-                    Layout.preferredWidth: appDrawer.expanded ? flickable.width - 40 : Math.min(1200, flickable.width - 40)
+                    Layout.fillWidth: false
+                    Layout.preferredWidth: appDrawer.expanded
+                        ? columnLayout.cachedOverviewWidth
+                        : Math.min(1200, flickable.width - 40)
                     visible: (panelWindow.searchingText == "")
                     // But hide it when searching and not expanded (search results take priority)
                     opacity: (panelWindow.searchingText != "" && !appDrawer.expanded) ? 0 : 1
@@ -313,11 +234,79 @@ Scope {
                     }
                     
                     availableHeight: flickable.height
-                    availableWidth: flickable.width - 40
+                    availableWidth: appDrawer.expanded
+                        ? columnLayout.cachedOverviewWidth
+                        : Math.min(1200, flickable.width - 40)
                 }
             }
         }
-    }
+
+        // ── Wheel-event interceptor ──────────────────────────────────────────
+        // Sits at z:100 — above the StyledFlickable and all its descendants,
+        // including StyledFlickable's inner MouseArea (which would otherwise
+        // consume every wheel event). Qt hit-tests siblings by z-order, so
+        // this MouseArea is evaluated first.
+        //
+        //  acceptedButtons: Qt.NoButton  — mouse presses pass through to lower-z
+        //                                  items (app icon buttons, etc.)
+        //  propagateComposedEvents: true — click/release also fall through
+        //
+        //  Scroll DOWN while collapsed     → expand drawer
+        //  Scroll UP  at grid+outer top    → collapse drawer
+        //  Otherwise                       → scroll grid (expanded)
+        //                                    or outer flickable (collapsed)
+        MouseArea {
+            id: wheelOverlay
+            anchors.fill: flickable
+            z: 100
+            enabled: GlobalStates.overviewOpen
+            acceptedButtons: Qt.NoButton
+            propagateComposedEvents: true
+
+            onWheel: function(event) {
+                const scrollingDown = event.angleDelta.y < 0;
+                const scrollingUp   = event.angleDelta.y > 0;
+
+                if (!appDrawer.expanded && scrollingDown) {
+                    appDrawer.expanded = true;
+                    flickable.contentY = 0;
+                    event.accepted = true;
+                    return;
+                }
+
+                if (appDrawer.expanded && scrollingUp
+                        && flickable.scrollTargetY <= 0
+                        && appDrawer.isGridAtTop()) {
+                    appDrawer.expanded = false;
+                    appDrawer.searchText = "";
+                    Qt.callLater(() => { flickable.contentY = 0; });
+                    columnLayout.forceActiveFocus();
+                    event.accepted = true;
+                    return;
+                }
+
+                const threshold    = flickable.mouseScrollDeltaThreshold;
+                const delta        = event.angleDelta.y / threshold;
+                const scrollFactor = Math.abs(event.angleDelta.y) >= threshold
+                                     ? flickable.mouseScrollFactor
+                                     : flickable.touchpadScrollFactor;
+
+                if (appDrawer.expanded) {
+                    appDrawer.scrollGrid(delta, scrollFactor);
+                } else {
+                    const maxY    = Math.max(0, flickable.contentHeight - flickable.height);
+                    const targetY = Math.max(0, Math.min(
+                        flickable.scrollTargetY - delta * scrollFactor, maxY));
+                    flickable.scrollTargetY = targetY;
+                    flickable.contentY      = targetY;
+                }
+                event.accepted = true;
+            }
+        }
+
+        }   // end contentFade
+
+    }   // end PanelWindow
 
     function toggleClipboard() {
         if (GlobalStates.overviewOpen && overviewScope.dontAutoCancelSearch) {
