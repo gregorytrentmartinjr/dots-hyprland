@@ -50,6 +50,11 @@ ApplicationWindow {
             component: "modules/settings/InterfaceConfig.qml"
         },
         {
+            name: Translation.tr("Display"),
+            icon: "monitor",
+            component: "modules/settings/DisplayConfig.qml"
+        },
+        {
             name: Translation.tr("Connectivity"),
             icon: "settings_ethernet",
             component: "modules/settings/ConnectivityConfig.qml"
