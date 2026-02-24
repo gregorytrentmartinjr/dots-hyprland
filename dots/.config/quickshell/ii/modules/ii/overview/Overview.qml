@@ -124,6 +124,10 @@ Scope {
                             appDrawer.searchText = "";
                             Qt.callLater(() => { flickable.contentY = 0; });
                             columnLayout.forceActiveFocus();
+                            Qt.callLater(() => { searchWidget.focusSearchInput(); });
+                        } else if (panelWindow.searchingText !== "") {
+                            searchWidget.cancelSearch();
+                            Qt.callLater(() => { searchWidget.focusSearchInput(); });
                         } else {
                             GlobalStates.overviewOpen = false;
                         }
@@ -281,6 +285,7 @@ Scope {
                     appDrawer.searchText = "";
                     Qt.callLater(() => { flickable.contentY = 0; });
                     columnLayout.forceActiveFocus();
+                    Qt.callLater(() => { searchWidget.focusSearchInput(); });
                     event.accepted = true;
                     return;
                 }
