@@ -83,13 +83,6 @@ Scope {
                 }
             }
 
-            // Full-screen dim overlay — fixed opacity; contentFade handles the fade
-            Rectangle {
-                anchors.fill: parent
-                color: Appearance.colors.colLayer0
-                opacity: 0.90
-            }
-
         StyledFlickable {
             id: flickable
             anchors.fill: parent
@@ -97,8 +90,6 @@ Scope {
             contentHeight: columnLayout.implicitHeight
             clip: true
             visible: true
-            // DragAndOvershootBounds lets a touch drag overshoot past the top
-            // (contentY < 0), which we use as a fallback collapse trigger.
             boundsBehavior: Flickable.DragAndOvershootBounds
 
             onContentYChanged: {
