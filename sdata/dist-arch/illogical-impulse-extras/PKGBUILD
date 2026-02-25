@@ -20,7 +20,9 @@ depends=(
   impression
   libreoffice-fresh
   gnome-text-editor
-  vlc
+  mpv
+  mpv-modernz
+  mpv-thumbfast
   spotify
   satty
   snapper
