@@ -30,8 +30,8 @@ Item {
 
     function scaleForX(itemCenterX) {
         if (!magnificationEnabled || !listHovered || _reordering || dragging) return 1.0;
-        var maxScale = Config.options.dock.magnification?.maxScale ?? 1.0;
-        var sigma = Config.options.dock.magnification?.sigma ?? 70;
+        var maxScale = Config.options.dock.magnification?.maxScale ?? 1.2;
+        var sigma = Config.options.dock.magnification?.sigma ?? 60;
         var dist = itemCenterX - mouseXInList;
         return 1.0 + maxScale * Math.exp(-(dist * dist) / (2 * sigma * sigma));
     }
