@@ -17,14 +17,37 @@ Item {
     property real windowControlsHeight: 30
     property real buttonPadding: 5
 
+    property Item clickedButton: null
     property Item lastHoveredButton
     property bool buttonHovered: false
     property bool requestDockShow: previewPopup.show || contextMenu.isOpen
 
     // Magnification state
     property bool magnificationEnabled: Config.options.dock.magnification?.enable ?? false
-    property bool magnificationActive: magnificationTracker.containsMouse && !dragging && !_reordering
-    property real magnificationCursorX: magnificationTracker.mouseX
+    property alias listViewRef: listView
+    property real mouseXInList: -9999
+    property bool listHovered: false
+
+    function scaleForX(itemCenterX) {
+        if (!magnificationEnabled || !listHovered || _reordering || dragging) return 1.0;
+        var maxScale = Config.options.dock.magnification?.maxScale ?? 1.0;
+        var sigma = Config.options.dock.magnification?.sigma ?? 70;
+        var dist = itemCenterX - mouseXInList;
+        return 1.0 + maxScale * Math.exp(-(dist * dist) / (2 * sigma * sigma));
+    }
+
+    function showPreview(button) {
+        clickedButton = button;
+        previewPopup.fading = false;
+        fadeTimer.stop();
+        previewPopup.show = true;
+        dismissTimer.restart();
+    }
+    function hidePreview() {
+        dismissTimer.stop();
+        previewPopup.fading = true;
+        fadeTimer.restart();
+    }
 
     // Drag-to-reorder state
     property bool dragging: false
@@ -78,6 +101,20 @@ Item {
     Layout.topMargin: Appearance.sizes.hyprlandGapsOut // why does this work
     implicitWidth: listView.implicitWidth
 
+    // Hover-only overlay for magnification — acceptedButtons: Qt.NoButton means it never steals clicks
+    MouseArea {
+        id: listHoverArea
+        anchors.fill: listView
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+        z: 1
+        onPositionChanged: mouse => {
+            root.mouseXInList = mouse.x + listView.contentX;
+        }
+        onEntered: root.listHovered = true
+        onExited: root.listHovered = false
+    }
+
     StyledListView {
         id: listView
         spacing: 2
@@ -105,67 +142,47 @@ Item {
             required property int index
             appToplevel: modelData
             appListRoot: root
-            delegateIndex: index
+            delegateIndex: {
+                var pinnedApps = Config.options?.dock.pinnedApps ?? [];
+                return pinnedApps.indexOf(modelData.appId.toLowerCase());
+            }
+            buttonIndex: index
 
             topInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
             bottomInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
+            hoverScale: root.scaleForX(x + width / 2)
         }
-    }
-
-    // Magnification cursor tracker - overlays the listView area
-    MouseArea {
-        id: magnificationTracker
-        visible: root.magnificationEnabled
-        anchors {
-            top: listView.top
-            bottom: listView.bottom
-            left: listView.left
-            right: listView.right
-        }
-        hoverEnabled: true
-        acceptedButtons: Qt.NoButton
     }
 
     PopupWindow {
         id: previewPopup
-        property var appTopLevel: root.lastHoveredButton?.appToplevel
-        property bool allPreviewsReady: false
-        Connections {
-            target: root
-            function onLastHoveredButtonChanged() {
-                previewPopup.allPreviewsReady = false; // Reset readiness when the hovered button changes
-            }
-        }
-        function updatePreviewReadiness() {
-            for(var i = 0; i < previewRowLayout.children.length; i++) {
-                const view = previewRowLayout.children[i];
-                if (view.hasContent === false) {
-                    allPreviewsReady = false;
-                    return;
-                }
-            }
-            allPreviewsReady = true;
-        }
-        property bool shouldShow: {
-            if (root.dragging) return false;
-            const hoverConditions = (popupMouseArea.containsMouse || root.buttonHovered)
-            return hoverConditions && allPreviewsReady;
-        }
+        property var appTopLevel: root.clickedButton?.appToplevel
         property bool show: false
+        property bool fading: false
 
-        onShouldShowChanged: {
-            if (shouldShow) {
-                // show = true;
-                updateTimer.restart();
-            } else {
-                updateTimer.restart();
+        onShowChanged: {
+            if (show) {
+                fading = false;
+                dismissTimer.restart();
             }
         }
+
         Timer {
-            id: updateTimer
-            interval: 100
+            id: dismissTimer
+            interval: 3000
             onTriggered: {
-                previewPopup.show = previewPopup.shouldShow
+                previewPopup.fading = true;
+                fadeTimer.restart();
+            }
+        }
+
+        Timer {
+            id: fadeTimer
+            interval: Appearance.animation.elementMoveFast.duration
+            onTriggered: {
+                previewPopup.show = false;
+                previewPopup.fading = false;
+                root.clickedButton = null;
             }
         }
         anchor {
@@ -187,12 +204,13 @@ Item {
             implicitHeight: root.maxWindowPreviewHeight + root.windowControlsHeight + Appearance.sizes.elevationMargin * 2
             hoverEnabled: true
             x: {
-                const itemCenter = root.QsWindow?.mapFromItem(root.lastHoveredButton, root.lastHoveredButton?.width / 2, 0);
+                const itemCenter = root.QsWindow?.mapFromItem(root.clickedButton, root.clickedButton?.width / 2, 0);
                 return itemCenter.x - width / 2
             }
+
             StyledRectangularShadow {
                 target: popupBackground
-                opacity: previewPopup.show ? 1 : 0
+                opacity: (previewPopup.show && !previewPopup.fading) ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity {
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
@@ -201,7 +219,7 @@ Item {
             Rectangle {
                 id: popupBackground
                 property real padding: 5
-                opacity: previewPopup.show ? 1 : 0
+                opacity: (previewPopup.show && !previewPopup.fading) ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity {
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
@@ -236,6 +254,7 @@ Item {
                                 windowButton.modelData?.close();
                             }
                             onClicked: {
+                                root.hidePreview();
                                 windowButton.modelData?.activate();
                             }
                             contentItem: ColumnLayout {
@@ -271,19 +290,17 @@ Item {
                                             color: Appearance.m3colors.m3onSurface
                                         }
                                         onClicked: {
+                                            root.hidePreview();
                                             windowButton.modelData?.close();
                                         }
                                     }
                                 }
                                 ScreencopyView {
                                     id: screencopyView
-                                    captureSource: previewPopup ? windowButton.modelData : null
+                                    captureSource: previewPopup.show ? windowButton.modelData : null
                                     live: true
                                     paintCursor: true
                                     constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
-                                    onHasContentChanged: {
-                                        previewPopup.updatePreviewReadiness();
-                                    }
                                     layer.enabled: true
                                     layer.effect: OpacityMask {
                                         maskSource: Rectangle {

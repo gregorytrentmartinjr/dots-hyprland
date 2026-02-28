@@ -19,21 +19,24 @@ DockButton {
     property bool appIsActive: appToplevel.toplevels.find(t => (t.activated == true)) !== undefined
 
     readonly property bool isSeparator: appToplevel.appId === "SEPARATOR"
-    readonly property var desktopEntry: DesktopEntries.heuristicLookup(appToplevel.appId)
-    enabled: !isSeparator
+    property var desktopEntry: DesktopEntries.heuristicLookup(appToplevel.appId)
 
-    // Gaussian magnification
-    property real baseButtonWidth: implicitHeight - topInset - bottomInset
-    property real magnificationScale: {
-        if (!appListRoot.magnificationEnabled || !appListRoot.magnificationActive || isSeparator) return 1.0;
-        var mapped = mapToItem(appListRoot, width / 2, 0);
-        var distance = Math.abs(mapped.x - appListRoot.magnificationCursorX);
-        var maxScale = Config.options.dock.magnification?.maxScale ?? 1.0;
-        var sigma = Config.options.dock.magnification?.sigma ?? 70;
-        return 1.0 + maxScale * Math.exp(-(distance * distance) / (2 * sigma * sigma));
+    Timer {
+        property int retryCount: 5
+        interval: 1000
+        running: !root.isSeparator && root.desktopEntry === null && retryCount > 0
+        repeat: true
+        onTriggered: {
+            retryCount--;
+            root.desktopEntry = DesktopEntries.heuristicLookup(root.appToplevel.appId);
+        }
     }
 
-    implicitWidth: isSeparator ? 1 : baseButtonWidth
+    enabled: !isSeparator
+    property real hoverScale: 1.0
+    property int buttonIndex: 0
+
+    implicitWidth: isSeparator ? 1 : (implicitHeight - topInset - bottomInset)
 
     // Drag-to-reorder
     readonly property bool isDragged: appListRoot.dragging && delegateIndex === appListRoot.dragSourceIndex
@@ -48,7 +51,7 @@ DockButton {
         if (src > tgt && idx >= tgt && idx < src) return appListRoot.slotWidth;
         return 0;
     }
-    z: isDragged ? 100 : (magnificationScale > 1.01 ? magnificationScale * 10 : 0)
+    z: isDragged ? 100 : 0
     opacity: isDragged ? 0.85 : (enabled ? 1 : 0.4)
     scale: isDragged ? 1.05 : 1
 
@@ -70,94 +73,89 @@ DockButton {
         sourceComponent: DockSeparator {}
     }
 
-    Loader {
+    // Drag overlay for pinned non-separator items
+    MouseArea {
+        id: dragOverlay
         anchors.fill: parent
-        active: appToplevel.toplevels.length > 0
-        sourceComponent: MouseArea {
-            id: mouseArea
-            anchors.fill: parent
-            hoverEnabled: true
-            acceptedButtons: Qt.NoButton
-            onEntered: {
-                appListRoot.lastHoveredButton = root
-                appListRoot.buttonHovered = true
-                lastFocused = appToplevel.toplevels.length - 1
+        z: 10
+        enabled: appToplevel.pinned && !isSeparator
+        acceptedButtons: Qt.LeftButton
+        preventStealing: true
+        property real pressX: 0
+        property bool dragActive: false
+
+        onPressed: (event) => {
+            pressX = event.x;
+            root.down = true;
+            root.startRipple(event.x, event.y);
+        }
+        onPositionChanged: (event) => {
+            if (!pressed) return;
+            var dist = Math.abs(event.x - pressX);
+            if (!dragActive && dist > 5) {
+                dragActive = true;
+                root.cancelRipple();
+                root.down = false;
+                appListRoot.buttonHovered = false;
+                appListRoot.dragSourceIndex = root.delegateIndex;
+                var mapped = mapToItem(appListRoot, event.x, event.y);
+                appListRoot.dragStartCursorX = mapped.x;
+                appListRoot.dragCursorX = mapped.x;
+                appListRoot.slotWidth = root.width + 2;
+                appListRoot.dragging = true;
             }
-            onExited: {
-                if (appListRoot.lastHoveredButton === root) {
-                    appListRoot.buttonHovered = false
-                }
+            if (dragActive) {
+                var mapped = mapToItem(appListRoot, event.x, event.y);
+                appListRoot.dragCursorX = mapped.x;
             }
+        }
+        onReleased: (event) => {
+            if (dragActive) {
+                dragActive = false;
+                appListRoot.finishDrag();
+            } else {
+                root.down = false;
+                root.cancelRipple();
+                root.click();
+            }
+        }
+        onCanceled: {
+            if (dragActive) {
+                dragActive = false;
+                appListRoot.cancelDrag();
+            }
+            root.down = false;
+            root.cancelRipple();
         }
     }
 
-    // Drag overlay for pinned non-separator items
-    Loader {
+    // Hover tracker — magnification
+    MouseArea {
+        id: hoverTracker
         anchors.fill: parent
-        z: 10
-        active: appToplevel.pinned && !isSeparator
-        sourceComponent: MouseArea {
-            id: dragOverlay
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton
-            preventStealing: true
-            property real pressX: 0
-            property bool dragActive: false
-
-            onPressed: (event) => {
-                pressX = event.x;
-                root.down = true;
-                root.startRipple(event.x, event.y);
-            }
-            onPositionChanged: (event) => {
-                if (!pressed) return;
-                var dist = Math.abs(event.x - pressX);
-                if (!dragActive && dist > 5) {
-                    dragActive = true;
-                    root.cancelRipple();
-                    root.down = false;
-                    appListRoot.buttonHovered = false;
-                    // Set all state BEFORE enabling drag to avoid stale computations
-                    appListRoot.dragSourceIndex = root.delegateIndex;
-                    var mapped = mapToItem(appListRoot, event.x, event.y);
-                    appListRoot.dragStartCursorX = mapped.x;
-                    appListRoot.dragCursorX = mapped.x;
-                    appListRoot.slotWidth = root.width + 2; // width + listView spacing
-                    appListRoot.dragging = true;
-                }
-                if (dragActive) {
-                    var mapped = mapToItem(appListRoot, event.x, event.y);
-                    appListRoot.dragCursorX = mapped.x;
-                }
-            }
-            onReleased: (event) => {
-                if (dragActive) {
-                    dragActive = false;
-                    appListRoot.finishDrag();
-                } else {
-                    root.down = false;
-                    root.cancelRipple();
-                    root.click();
-                }
-            }
-            onCanceled: {
-                if (dragActive) {
-                    dragActive = false;
-                    appListRoot.cancelDrag();
-                }
-                root.down = false;
-                root.cancelRipple();
-            }
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+        z: 1
+        onPositionChanged: mouse => {
+            appListRoot.listHovered = true;
+            const mapped = mapToItem(appListRoot.listViewRef, mouse.x, mouse.y);
+            appListRoot.mouseXInList = mapped.x + appListRoot.listViewRef.contentX;
         }
+        onEntered: appListRoot.listHovered = true
+        onExited: Qt.callLater(() => { appListRoot.listHovered = false; })
     }
 
     onClicked: {
-        if (appToplevel.toplevels.length === 0) {
+        if (appToplevel.toplevels.length > 0) {
+            // Toggle preview
+            if (appListRoot.clickedButton === root) {
+                appListRoot.hidePreview();
+            } else {
+                appListRoot.showPreview(root);
+            }
+        } else {
             root.desktopEntry?.execute();
-            return;
         }
-        lastFocused = (lastFocused + 1) % appToplevel.toplevels.length
-        appToplevel.toplevels[lastFocused].activate()
     }
 
     middleClickAction: () => {
@@ -172,19 +170,26 @@ DockButton {
         active: !isSeparator
         sourceComponent: Item {
             anchors.centerIn: parent
+            width: root.iconSize
+            height: root.iconSize
+            scale: root.hoverScale
+            transformOrigin: Item.Bottom
+
+            Behavior on scale {
+                NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+            }
 
             Loader {
                 id: iconImageLoader
                 anchors {
-                    horizontalCenter: parent.horizontalCenter
+                    left: parent.left
+                    right: parent.right
                     verticalCenter: parent.verticalCenter
-                    // Offset upward so the icon bottom stays fixed while it grows upward
-                    verticalCenterOffset: -(root.iconSize * (root.magnificationScale - 1)) / 2
                 }
                 active: !root.isSeparator
                 sourceComponent: IconImage {
                     source: Quickshell.iconPath(AppSearch.guessIcon(appToplevel.appId), "image-missing")
-                    implicitSize: root.iconSize * root.magnificationScale
+                    implicitSize: root.iconSize
                 }
             }
 
