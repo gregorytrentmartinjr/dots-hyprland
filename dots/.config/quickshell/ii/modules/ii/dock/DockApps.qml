@@ -23,7 +23,7 @@ Item {
 
     // Magnification state
     property bool magnificationEnabled: Config.options.dock.magnification?.enable ?? false
-    property bool magnificationActive: magnificationTracker.containsMouse && !dragging
+    property bool magnificationActive: magnificationTracker.containsMouse && !dragging && !_reordering
     property real magnificationCursorX: magnificationTracker.mouseX
 
     // Drag-to-reorder state
@@ -42,6 +42,15 @@ Item {
         return Math.max(0, Math.min(dragSourceIndex + slots, pinnedCount - 1));
     }
 
+    Timer {
+        id: reorderSettleTimer
+        interval: 80
+        onTriggered: {
+            root._reordering = false;
+            root._suppressTranslateAnim = false;
+        }
+    }
+
     function finishDrag() {
         _suppressTranslateAnim = true;
         if (dragging && dragSourceIndex !== dragTargetIndex) {
@@ -52,10 +61,7 @@ Item {
         dragSourceIndex = -1;
         dragCursorX = 0;
         dragStartCursorX = 0;
-        Qt.callLater(function() {
-            _reordering = false;
-            _suppressTranslateAnim = false;
-        });
+        reorderSettleTimer.restart();
     }
 
     function cancelDrag() {
@@ -89,6 +95,7 @@ Item {
         implicitWidth: contentWidth
 
         Behavior on implicitWidth {
+            enabled: !root._reordering
             animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
         }
 
