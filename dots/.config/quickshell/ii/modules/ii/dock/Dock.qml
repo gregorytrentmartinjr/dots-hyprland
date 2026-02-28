@@ -63,10 +63,6 @@ Scope { // Scope
                 implicitWidth: dockHoverRegion.implicitWidth + Appearance.sizes.elevationMargin * 2
                 hoverEnabled: true
 
-                Behavior on anchors.topMargin {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                }
-
                 Item {
                     id: dockHoverRegion
                     anchors.fill: parent

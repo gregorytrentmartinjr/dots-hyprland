@@ -47,20 +47,33 @@ Item {
         return Math.max(0, Math.min(dragSourceIndex + slots, pinnedCount - 1));
     }
 
+    // Timer to re-enable animations after the model has fully settled.
+    // Qt.callLater can race with deferred model updates, causing transitions
+    // to fire on items that are still being added/removed (the flicker).
+    Timer {
+        id: reorderSettleTimer
+        interval: 50
+        onTriggered: {
+            root._reordering = false;
+            root._suppressTranslateAnim = false;
+        }
+    }
+
     function finishDrag() {
         _suppressTranslateAnim = true;
         if (dragging && dragSourceIndex !== dragTargetIndex) {
             _reordering = true;
             TaskbarApps.reorderPinned(dragSourceIndex, dragTargetIndex);
+            // Process the model change synchronously while transitions are disabled
+            listViewRef.forceLayout();
         }
         dragging = false;
         dragSourceIndex = -1;
         dragCursorX = 0;
         dragStartCursorX = 0;
-        Qt.callLater(function() {
-            _reordering = false;
-            _suppressTranslateAnim = false;
-        });
+        // Allow the ListView to fully process delegate changes before
+        // re-enabling transitions, preventing the opacity-flicker on add.
+        reorderSettleTimer.restart();
     }
 
     function cancelDrag() {
