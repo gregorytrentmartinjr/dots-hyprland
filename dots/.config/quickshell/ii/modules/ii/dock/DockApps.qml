@@ -66,7 +66,10 @@ Item {
 
     Timer {
         id: reorderSettleTimer
-        interval: 80
+        // Must outlast Config file write (50ms) + file-change reload (50ms) cycle
+        // to prevent add/remove transitions from firing on the reload-triggered
+        // model rebuild.
+        interval: 300
         onTriggered: {
             root._reordering = false;
         }
@@ -74,13 +77,19 @@ Item {
 
     function finishDrag() {
         _reordering = true;
-        if (dragging && dragSourceIndex !== dragTargetIndex) {
-            TaskbarApps.reorderPinned(dragSourceIndex, dragTargetIndex);
-        }
+        // Capture indices before clearing drag state since dragTargetIndex
+        // depends on dragging being true
+        var src = dragSourceIndex;
+        var tgt = dragTargetIndex;
+        // Clear drag visual state first
         dragging = false;
         dragSourceIndex = -1;
         dragCursorX = 0;
         dragStartCursorX = 0;
+        // Then update the model
+        if (src >= 0 && src !== tgt) {
+            TaskbarApps.reorderPinned(src, tgt);
+        }
         reorderSettleTimer.restart();
     }
 

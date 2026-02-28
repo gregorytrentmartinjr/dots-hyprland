@@ -40,6 +40,7 @@ DockButton {
     implicitWidth: isSeparator ? 1 : effectiveIconSize
 
     Behavior on implicitWidth {
+        enabled: !appListRoot._reordering
         NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
     }
 
