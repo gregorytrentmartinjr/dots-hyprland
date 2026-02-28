@@ -23,12 +23,13 @@ Item {
 
     // Magnification state
     property bool magnificationEnabled: Config.options.dock.magnification?.enable ?? false
-    property bool magnificationActive: magnificationTracker.containsMouse && !dragging && !_reordering
+    property bool magnificationActive: magnificationTracker.containsMouse && !dragging && !_settlingAfterReorder
     property real magnificationCursorX: magnificationTracker.mouseX
 
     // Drag-to-reorder state
     property bool dragging: false
     property bool _reordering: false
+    property bool _settlingAfterReorder: false
     property bool _suppressTranslateAnim: false
     property int dragSourceIndex: -1
     property real dragCursorX: 0
@@ -46,13 +47,13 @@ Item {
         id: reorderSettleTimer
         interval: 80
         onTriggered: {
-            root._reordering = false;
-            root._suppressTranslateAnim = false;
+            root._settlingAfterReorder = false;
         }
     }
 
     function finishDrag() {
         _suppressTranslateAnim = true;
+        _settlingAfterReorder = true;
         if (dragging && dragSourceIndex !== dragTargetIndex) {
             _reordering = true;
             TaskbarApps.reorderPinned(dragSourceIndex, dragTargetIndex);
@@ -61,6 +62,10 @@ Item {
         dragSourceIndex = -1;
         dragCursorX = 0;
         dragStartCursorX = 0;
+        Qt.callLater(function() {
+            _reordering = false;
+            _suppressTranslateAnim = false;
+        });
         reorderSettleTimer.restart();
     }
 
@@ -95,7 +100,7 @@ Item {
         implicitWidth: contentWidth
 
         Behavior on implicitWidth {
-            enabled: !root._reordering
+            enabled: !root._settlingAfterReorder
             animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
         }
 
