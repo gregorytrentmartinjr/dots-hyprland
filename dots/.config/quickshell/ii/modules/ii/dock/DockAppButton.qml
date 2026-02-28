@@ -55,7 +55,7 @@ DockButton {
     transform: Translate {
         x: root.dragTranslateX
         Behavior on x {
-            enabled: !root.isDragged && !appListRoot._suppressTranslateAnim
+            enabled: !root.isDragged && !appListRoot._reordering
             animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
         }
     }

@@ -23,14 +23,12 @@ Item {
 
     // Magnification state
     property bool magnificationEnabled: Config.options.dock.magnification?.enable ?? false
-    property bool magnificationActive: magnificationTracker.containsMouse && !dragging && !_settlingAfterReorder
+    property bool magnificationActive: magnificationTracker.containsMouse && !dragging && !_reordering
     property real magnificationCursorX: magnificationTracker.mouseX
 
     // Drag-to-reorder state
     property bool dragging: false
     property bool _reordering: false
-    property bool _settlingAfterReorder: false
-    property bool _suppressTranslateAnim: false
     property int dragSourceIndex: -1
     property real dragCursorX: 0
     property real dragStartCursorX: 0
@@ -47,35 +45,29 @@ Item {
         id: reorderSettleTimer
         interval: 80
         onTriggered: {
-            root._settlingAfterReorder = false;
+            root._reordering = false;
         }
     }
 
     function finishDrag() {
-        _suppressTranslateAnim = true;
-        _settlingAfterReorder = true;
+        _reordering = true;
         if (dragging && dragSourceIndex !== dragTargetIndex) {
-            _reordering = true;
             TaskbarApps.reorderPinned(dragSourceIndex, dragTargetIndex);
         }
         dragging = false;
         dragSourceIndex = -1;
         dragCursorX = 0;
         dragStartCursorX = 0;
-        Qt.callLater(function() {
-            _reordering = false;
-            _suppressTranslateAnim = false;
-        });
         reorderSettleTimer.restart();
     }
 
     function cancelDrag() {
-        _suppressTranslateAnim = true;
+        _reordering = true;
         dragging = false;
         dragSourceIndex = -1;
         dragCursorX = 0;
         dragStartCursorX = 0;
-        Qt.callLater(function() { _suppressTranslateAnim = false; });
+        reorderSettleTimer.restart();
     }
 
     function openContextMenu(button, appToplevelData) {
@@ -100,7 +92,7 @@ Item {
         implicitWidth: contentWidth
 
         Behavior on implicitWidth {
-            enabled: !root._settlingAfterReorder
+            enabled: !root._reordering
             animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
         }
 
