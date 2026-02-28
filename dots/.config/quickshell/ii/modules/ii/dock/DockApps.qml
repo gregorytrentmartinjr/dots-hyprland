@@ -20,7 +20,7 @@ Item {
     property Item clickedButton: null
     property Item lastHoveredButton: null
     property bool buttonHovered: false
-    property bool requestDockShow: previewPopup.show
+    property bool requestDockShow: previewPopup.show || contextMenu.isOpen
 
     function showPreview(button) {
         clickedButton = button;
@@ -85,6 +85,10 @@ Item {
         Qt.callLater(function() { _suppressTranslateAnim = false; });
     }
 
+    function openContextMenu(button, appToplevelData) {
+        hidePreview();
+        contextMenu.open(button, appToplevelData);
+    }
 
     property alias listViewRef: listView
     property real mouseXInList: -9999
@@ -323,4 +327,7 @@ Item {
         }
     }
 
+    DockContextMenu {
+        id: contextMenu
+    }
 }

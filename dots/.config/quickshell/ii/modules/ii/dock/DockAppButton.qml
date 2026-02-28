@@ -73,6 +73,21 @@ DockButton {
         sourceComponent: DockSeparator {}
     }
 
+    // Shift+left click opens context menu for all non-separator items
+    MouseArea {
+        anchors.fill: parent
+        z: 20
+        enabled: !isSeparator
+        acceptedButtons: Qt.LeftButton
+        onPressed: (event) => {
+            if (event.modifiers & Qt.ShiftModifier) {
+                appListRoot.openContextMenu(root, appToplevel);
+            } else {
+                event.accepted = false;
+            }
+        }
+    }
+
     // Drag overlay for pinned non-separator items
     MouseArea {
         id: dragOverlay
