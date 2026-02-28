@@ -334,7 +334,7 @@ Singleton {
                 property list<string> ignoredAppRegexes: []
                 property JsonObject magnification: JsonObject {
                     property bool enable: true
-                    property real maxScale: 1.0   // Additional scale at peak (2x total)
+                    property real maxScale: 2.0   // Additional scale at peak (3x total)
                     property real sigma: 70       // Gaussian spread in pixels
                 }
             }

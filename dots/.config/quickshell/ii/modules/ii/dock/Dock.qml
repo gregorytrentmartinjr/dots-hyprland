@@ -31,7 +31,7 @@ Scope { // Scope
 
             // Extra height above the dock for magnified icons to grow into
             property real magnificationExtraHeight: (Config.options?.dock.magnification?.enable ?? false) ?
-                35 * (Config.options?.dock.magnification?.maxScale ?? 2.4) : 0
+                35 * (Config.options?.dock.magnification?.maxScale ?? 1.0) : 0
 
             anchors {
                 bottom: true
