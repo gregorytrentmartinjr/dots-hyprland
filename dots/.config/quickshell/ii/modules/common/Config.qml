@@ -332,6 +332,11 @@ Singleton {
                 property list<string> pinnedApps: [ // IDs of pinned entries
                     "org.kde.dolphin", "kitty",]
                 property list<string> ignoredAppRegexes: []
+                property JsonObject magnification: JsonObject {
+                    property bool enable: true
+                    property real maxScale: 0.5   // Additional scale at peak (1.5x total)
+                    property real sigma: 70       // Gaussian spread in pixels
+                }
             }
 
             property JsonObject interactions: JsonObject {

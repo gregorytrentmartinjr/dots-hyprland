@@ -29,19 +29,23 @@ Scope { // Scope
 
             property bool reveal: root.pinned || (Config.options?.dock.hoverToReveal && dockMouseArea.containsMouse) || dockApps.requestDockShow || (!ToplevelManager.activeToplevel?.activated)
 
+            // Extra height above the dock for magnified icons to grow into
+            property real magnificationExtraHeight: (Config.options?.dock.magnification?.enable ?? false) ?
+                35 * (Config.options?.dock.magnification?.maxScale ?? 0.5) : 0
+
             anchors {
                 bottom: true
                 left: true
                 right: true
             }
 
-            exclusiveZone: root.pinned ? implicitHeight - (Appearance.sizes.hyprlandGapsOut) - (Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut) : 0
+            exclusiveZone: root.pinned ? implicitHeight - magnificationExtraHeight - (Appearance.sizes.hyprlandGapsOut) - (Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut) : 0
 
             implicitWidth: dockBackground.implicitWidth
             WlrLayershell.namespace: "quickshell:dock"
             color: "transparent"
 
-            implicitHeight: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut
+            implicitHeight: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut + magnificationExtraHeight
 
             mask: Region {
                 item: dockMouseArea
@@ -85,7 +89,7 @@ Scope { // Scope
                             id: dockVisualBackground
                             property real margin: Appearance.sizes.elevationMargin
                             anchors.fill: parent
-                            anchors.topMargin: Appearance.sizes.elevationMargin
+                            anchors.topMargin: Appearance.sizes.elevationMargin + dockRoot.magnificationExtraHeight
                             anchors.bottomMargin: Appearance.sizes.hyprlandGapsOut
                             color: Appearance.colors.colLayer0
                             border.width: 1
@@ -96,6 +100,7 @@ Scope { // Scope
                         RowLayout {
                             id: dockRow
                             anchors.top: parent.top
+                            anchors.topMargin: dockRoot.magnificationExtraHeight
                             anchors.bottom: parent.bottom
                             anchors.horizontalCenter: parent.horizontalCenter
                             spacing: 3

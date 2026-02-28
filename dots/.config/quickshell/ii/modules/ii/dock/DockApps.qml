@@ -21,6 +21,11 @@ Item {
     property bool buttonHovered: false
     property bool requestDockShow: previewPopup.show || contextMenu.isOpen
 
+    // Magnification state
+    property bool magnificationEnabled: Config.options.dock.magnification?.enable ?? false
+    property bool magnificationActive: magnificationTracker.containsMouse && !dragging
+    property real magnificationCursorX: magnificationTracker.mouseX
+
     // Drag-to-reorder state
     property bool dragging: false
     property bool _reordering: false
@@ -101,6 +106,20 @@ Item {
             topInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
             bottomInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
         }
+    }
+
+    // Magnification cursor tracker - overlays the listView area
+    MouseArea {
+        id: magnificationTracker
+        visible: root.magnificationEnabled
+        anchors {
+            top: listView.top
+            bottom: listView.bottom
+            left: listView.left
+            right: listView.right
+        }
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
     }
 
     PopupWindow {

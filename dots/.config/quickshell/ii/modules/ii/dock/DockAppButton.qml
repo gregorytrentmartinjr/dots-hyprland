@@ -21,7 +21,22 @@ DockButton {
     readonly property bool isSeparator: appToplevel.appId === "SEPARATOR"
     readonly property var desktopEntry: DesktopEntries.heuristicLookup(appToplevel.appId)
     enabled: !isSeparator
-    implicitWidth: isSeparator ? 1 : implicitHeight - topInset - bottomInset
+
+    // Gaussian magnification
+    property real baseButtonWidth: implicitHeight - topInset - bottomInset
+    property real magnificationScale: {
+        if (!appListRoot.magnificationEnabled || !appListRoot.magnificationActive || isSeparator) return 1.0;
+        var mapped = mapToItem(appListRoot, width / 2, 0);
+        var distance = Math.abs(mapped.x - appListRoot.magnificationCursorX);
+        var maxScale = Config.options.dock.magnification?.maxScale ?? 0.5;
+        var sigma = Config.options.dock.magnification?.sigma ?? 70;
+        return 1.0 + maxScale * Math.exp(-(distance * distance) / (2 * sigma * sigma));
+    }
+    Behavior on magnificationScale {
+        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+    }
+
+    implicitWidth: isSeparator ? 1 : baseButtonWidth * magnificationScale
 
     // Drag-to-reorder
     readonly property bool isDragged: appListRoot.dragging && delegateIndex === appListRoot.dragSourceIndex
@@ -160,6 +175,13 @@ DockButton {
         active: !isSeparator
         sourceComponent: Item {
             anchors.centerIn: parent
+
+            transform: Scale {
+                origin.x: 0
+                origin.y: parent.height / 2
+                xScale: root.magnificationScale
+                yScale: root.magnificationScale
+            }
 
             Loader {
                 id: iconImageLoader
