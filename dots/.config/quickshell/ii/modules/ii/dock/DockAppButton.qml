@@ -36,7 +36,7 @@ DockButton {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
     }
 
-    implicitWidth: isSeparator ? 1 : baseButtonWidth * magnificationScale
+    implicitWidth: isSeparator ? 1 : baseButtonWidth
 
     // Drag-to-reorder
     readonly property bool isDragged: appListRoot.dragging && delegateIndex === appListRoot.dragSourceIndex
@@ -51,7 +51,7 @@ DockButton {
         if (src > tgt && idx >= tgt && idx < src) return appListRoot.slotWidth;
         return 0;
     }
-    z: isDragged ? 100 : 0
+    z: isDragged ? 100 : (magnificationScale > 1.01 ? magnificationScale * 10 : 0)
     opacity: isDragged ? 0.85 : (enabled ? 1 : 0.4)
     scale: isDragged ? 1.05 : 1
 
@@ -176,24 +176,18 @@ DockButton {
         sourceComponent: Item {
             anchors.centerIn: parent
 
-            transform: Scale {
-                origin.x: 0
-                origin.y: parent.height / 2
-                xScale: root.magnificationScale
-                yScale: root.magnificationScale
-            }
-
             Loader {
                 id: iconImageLoader
                 anchors {
-                    left: parent.left
-                    right: parent.right
+                    horizontalCenter: parent.horizontalCenter
                     verticalCenter: parent.verticalCenter
+                    // Offset upward so the icon bottom stays fixed while it grows upward
+                    verticalCenterOffset: -(root.iconSize * (root.magnificationScale - 1)) / 2
                 }
                 active: !root.isSeparator
                 sourceComponent: IconImage {
                     source: Quickshell.iconPath(AppSearch.guessIcon(appToplevel.appId), "image-missing")
-                    implicitSize: root.iconSize
+                    implicitSize: root.iconSize * root.magnificationScale
                 }
             }
 
