@@ -36,7 +36,12 @@ DockButton {
     property real hoverScale: 1.0
     property int buttonIndex: 0
 
-    implicitWidth: isSeparator ? 1 : (implicitHeight - topInset - bottomInset)
+    property real effectiveIconSize: iconSize * hoverScale
+    implicitWidth: isSeparator ? 1 : effectiveIconSize
+
+    Behavior on implicitWidth {
+        NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+    }
 
     // Drag-to-reorder
     readonly property bool isDragged: appListRoot.dragging && delegateIndex === appListRoot.dragSourceIndex
@@ -169,13 +174,15 @@ DockButton {
     contentItem: Loader {
         active: !isSeparator
         sourceComponent: Item {
-            anchors.centerIn: parent
-            width: root.iconSize
-            height: root.iconSize
-            scale: root.hoverScale
-            transformOrigin: Item.Bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            width: root.effectiveIconSize
+            height: root.effectiveIconSize
 
-            Behavior on scale {
+            Behavior on width {
+                NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
+            }
+            Behavior on height {
                 NumberAnimation { duration: 130; easing.type: Easing.OutCubic }
             }
 
@@ -189,7 +196,7 @@ DockButton {
                 active: !root.isSeparator
                 sourceComponent: IconImage {
                     source: Quickshell.iconPath(AppSearch.guessIcon(appToplevel.appId), "image-missing")
-                    implicitSize: root.iconSize
+                    implicitSize: root.effectiveIconSize
                 }
             }
 
