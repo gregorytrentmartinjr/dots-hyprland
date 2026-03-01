@@ -197,11 +197,11 @@ Item {
             onTriggered: {
                 previewPopup.show = false;
                 previewPopup.fading = false;
-                root.clickedButton = null;
             }
         }
         onVisibleChanged: {
             if (!visible) {
+                root.clickedButton = null;
                 root.anchorButton = null;
             }
         }
