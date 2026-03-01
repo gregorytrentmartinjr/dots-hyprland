@@ -19,6 +19,7 @@ Singleton {
     property bool oskOpen: false
     property bool overlayOpen: false
     property bool overviewOpen: false
+    property bool activityViewOpen: false
     property bool regionSelectorOpen: false
     property bool searchOpen: false
     property bool screenLocked: false
