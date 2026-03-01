@@ -86,7 +86,13 @@ Item {
     }
 
     function openContextMenu(button, appToplevelData) {
-        hidePreview();
+        // Immediately tear down the preview popup rather than fading it out.
+        // Having two PopupWindows alive at the same time crashes Quickshell.
+        dismissTimer.stop();
+        fadeTimer.stop();
+        previewPopup.show = false;
+        previewPopup.fading = false;
+        clickedButton = null;
         contextMenu.open(button, appToplevelData);
     }
 
