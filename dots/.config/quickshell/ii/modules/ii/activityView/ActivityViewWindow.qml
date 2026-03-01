@@ -54,10 +54,10 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         onClicked: event => {
             if (event.button === Qt.MiddleButton) {
-                Hyprland.dispatch(`closewindow address:${root.hyprlandClient?.address}`);
-            } else {
                 GlobalStates.activityViewOpen = false;
                 Hyprland.dispatch(`focuswindow address:${root.hyprlandClient?.address}`);
+            } else {
+                Hyprland.dispatch(`closewindow address:${root.hyprlandClient?.address}`);
             }
         }
     }
