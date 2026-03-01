@@ -73,32 +73,24 @@ DockButton {
         sourceComponent: DockSeparator {}
     }
 
-    // Left-click overlay for all non-separator items.
-    // Handles shift+click (context menu) and drag-to-reorder (pinned only).
-    // Right/middle clicks fall through to the RippleButton's MouseArea.
+    // Drag overlay for pinned non-separator items
     MouseArea {
         id: dragOverlay
         anchors.fill: parent
         z: 10
-        enabled: !isSeparator
+        enabled: appToplevel.pinned && !isSeparator
         acceptedButtons: Qt.LeftButton
         preventStealing: true
         property real pressX: 0
         property bool dragActive: false
-        property bool shiftHeld: false
 
         onPressed: (event) => {
-            if (event.modifiers & Qt.ShiftModifier) {
-                shiftHeld = true;
-                return; // Don't start ripple; open menu on release
-            }
-            shiftHeld = false;
             pressX = event.x;
             root.down = true;
             root.startRipple(event.x, event.y);
         }
         onPositionChanged: (event) => {
-            if (!pressed || shiftHeld || !appToplevel.pinned) return;
+            if (!pressed) return;
             var dist = Math.abs(event.x - pressX);
             if (!dragActive && dist > 5) {
                 dragActive = true;
@@ -118,11 +110,6 @@ DockButton {
             }
         }
         onReleased: (event) => {
-            if (shiftHeld) {
-                shiftHeld = false;
-                appListRoot.openContextMenu(root, appToplevel);
-                return;
-            }
             if (dragActive) {
                 dragActive = false;
                 appListRoot.finishDrag();
@@ -133,7 +120,6 @@ DockButton {
             }
         }
         onCanceled: {
-            shiftHeld = false;
             if (dragActive) {
                 dragActive = false;
                 appListRoot.cancelDrag();
@@ -177,7 +163,7 @@ DockButton {
     }
 
     altAction: () => {
-        TaskbarApps.togglePin(appToplevel.appId);
+        appListRoot.openContextMenu(root, appToplevel);
     }
 
     contentItem: Loader {

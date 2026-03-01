@@ -114,11 +114,9 @@ Item {
                         }
                     }
 
-                    // Separator before workspace/close items
-                    Loader {
-                        active: root.hasWindows
+                    // Separator
+                    ContextMenuSeparator {
                         Layout.fillWidth: true
-                        sourceComponent: ContextMenuSeparator {}
                     }
 
                     // Move to workspace (only when has windows)
@@ -168,6 +166,17 @@ Item {
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // Pin / Unpin
+                    ContextMenuItem {
+                        Layout.fillWidth: true
+                        iconName: TaskbarApps.isPinned(root.appToplevel?.appId ?? "") ? "keep_off" : "keep"
+                        label: TaskbarApps.isPinned(root.appToplevel?.appId ?? "") ? "Unpin" : "Pin to dock"
+                        onClicked: {
+                            TaskbarApps.togglePin(root.appToplevel.appId);
+                            root.close();
                         }
                     }
 
