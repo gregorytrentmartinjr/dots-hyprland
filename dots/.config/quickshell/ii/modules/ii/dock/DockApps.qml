@@ -103,7 +103,7 @@ Item {
     property real sigma: 60
 
     function scaleForX(itemCenterX) {
-        if (!listHovered) return 1.0;
+        if (!listHovered || previewPopup.show) return 1.0;
         const dist = itemCenterX - mouseXInList;
         return 1.0 + (maxScale - 1.0) * Math.exp(-(dist * dist) / (2 * sigma * sigma));
     }
