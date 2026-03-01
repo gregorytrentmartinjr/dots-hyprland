@@ -85,18 +85,20 @@ DockButton {
         preventStealing: true
         property real pressX: 0
         property bool dragActive: false
+        property bool shiftHeld: false
 
         onPressed: (event) => {
             if (event.modifiers & Qt.ShiftModifier) {
-                appListRoot.openContextMenu(root, appToplevel);
-                return;
+                shiftHeld = true;
+                return; // Don't start ripple; open menu on release
             }
+            shiftHeld = false;
             pressX = event.x;
             root.down = true;
             root.startRipple(event.x, event.y);
         }
         onPositionChanged: (event) => {
-            if (!pressed || !appToplevel.pinned) return;
+            if (!pressed || shiftHeld || !appToplevel.pinned) return;
             var dist = Math.abs(event.x - pressX);
             if (!dragActive && dist > 5) {
                 dragActive = true;
@@ -116,6 +118,11 @@ DockButton {
             }
         }
         onReleased: (event) => {
+            if (shiftHeld) {
+                shiftHeld = false;
+                appListRoot.openContextMenu(root, appToplevel);
+                return;
+            }
             if (dragActive) {
                 dragActive = false;
                 appListRoot.finishDrag();
@@ -126,6 +133,7 @@ DockButton {
             }
         }
         onCanceled: {
+            shiftHeld = false;
             if (dragActive) {
                 dragActive = false;
                 appListRoot.cancelDrag();
