@@ -304,7 +304,7 @@ Item {
                                 }
                                 ScreencopyView {
                                     id: screencopyView
-                                    captureSource: previewPopup.show ? windowButton.modelData : null
+                                    captureSource: previewPopup.visible ? windowButton.modelData : null
                                     live: true
                                     paintCursor: true
                                     constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
