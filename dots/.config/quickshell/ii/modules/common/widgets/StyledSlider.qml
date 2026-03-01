@@ -63,6 +63,7 @@ Slider {
     to: 1
 
     Behavior on value { // This makes the adjusted value (like volume) shift smoothly
+        enabled: !root.pressed
         SmoothedAnimation {
             velocity: Appearance.animation.elementMoveFast.velocity
         }
