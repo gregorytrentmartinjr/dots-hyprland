@@ -199,30 +199,21 @@ Item {
             }
         }
         anchor {
-            window: root.QsWindow.window
-            adjustment: PopupAdjustment.None
-            gravity: Edges.Top | Edges.Right
-            edges: Edges.Top | Edges.Left
-
+            item: root.clickedButton
+            gravity: Edges.Top
+            edges: Edges.Top
+            adjustment: PopupAdjustment.SlideX
         }
         visible: popupBackground.visible
         color: "transparent"
-        implicitWidth: root.QsWindow.window?.width ?? 1
-        implicitHeight: popupMouseArea.implicitHeight + root.windowControlsHeight + Appearance.sizes.elevationMargin * 2
+        implicitWidth: popupBackground.implicitWidth + Appearance.sizes.elevationMargin * 2
+        implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2
 
         MouseArea {
             id: popupMouseArea
-            anchors.bottom: parent.bottom
-            implicitWidth: popupBackground.implicitWidth + Appearance.sizes.elevationMargin * 2
-            implicitHeight: root.maxWindowPreviewHeight + root.windowControlsHeight + Appearance.sizes.elevationMargin * 2
+            anchors.fill: parent
             hoverEnabled: true
-            x: {
-                const itemCenter = root.QsWindow?.mapFromItem(root.clickedButton, root.clickedButton?.width / 2, 0);
-                return itemCenter.x - width / 2
-            }
-            
 
-            
             StyledRectangularShadow {
                 target: popupBackground
                 opacity: (previewPopup.show && !previewPopup.fading) ? 1 : 0
