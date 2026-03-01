@@ -12,7 +12,6 @@ DockButton {
     property var appToplevel
     property var appListRoot
     property int delegateIndex: -1
-    property int lastFocused: -1
     property real iconSize: 35
     property real countDotWidth: 10
     property real countDotHeight: 4
@@ -96,7 +95,6 @@ DockButton {
                 dragActive = true;
                 root.cancelRipple();
                 root.down = false;
-                appListRoot.buttonHovered = false;
                 appListRoot.dragSourceIndex = root.delegateIndex;
                 var mapped = mapToItem(appListRoot, event.x, event.y);
                 appListRoot.dragStartCursorX = mapped.x;

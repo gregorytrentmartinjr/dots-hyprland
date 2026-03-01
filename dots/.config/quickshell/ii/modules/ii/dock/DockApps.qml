@@ -18,16 +18,12 @@ Item {
     property real buttonPadding: 5
 
     property Item clickedButton: null
-    property Item anchorButton: null
-    property Item lastHoveredButton: null
-    property bool buttonHovered: false
     property bool previewShow: false
     property bool previewFading: false
     property bool requestDockShow: previewShow || contextMenu.isOpen
 
     function showPreview(button) {
         clickedButton = button;
-        anchorButton = button;
         previewFading = false;
         previewLoader.active = true;
         previewShow = true;
@@ -101,7 +97,6 @@ Item {
         previewFading = false;
         previewLoader.active = false;
         clickedButton = null;
-        anchorButton = null;
         contextMenu.open(button, appToplevelData);
     }
 
@@ -152,7 +147,6 @@ Item {
             root.previewFading = false;
             previewLoader.active = false;
             root.clickedButton = null;
-            root.anchorButton = null;
         }
     }
 
@@ -204,7 +198,7 @@ Item {
             visible: true
 
             anchor {
-                item: root.anchorButton
+                item: root.clickedButton
                 gravity: Edges.Top
                 edges: Edges.Top
                 adjustment: PopupAdjustment.SlideX
