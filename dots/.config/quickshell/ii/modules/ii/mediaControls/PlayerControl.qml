@@ -337,7 +337,7 @@ Item { // Player instance
                         StyledSlider {
                             Layout.preferredWidth: 120
 
-                            configuration: StyledSlider.Configuration.Wavy
+                            configuration: StyledSlider.Configuration.XS
                             highlightColor: blendedColors.colPrimary
                             trackColor: blendedColors.colSecondaryContainer
                             handleColor: blendedColors.colPrimary
@@ -371,8 +371,9 @@ Item { // Player instance
                                 id: sliderLoader
                                 anchors.fill: parent
                                 active: root.player?.canSeek ?? false
-                                sourceComponent: StyledSlider { 
+                                sourceComponent: StyledSlider {
                                     configuration: StyledSlider.Configuration.Wavy
+                                    animateWave: root.player?.isPlaying ?? false
                                     highlightColor: blendedColors.colPrimary
                                     trackColor: blendedColors.colSecondaryContainer
                                     handleColor: blendedColors.colPrimary
