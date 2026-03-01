@@ -73,39 +73,30 @@ DockButton {
         sourceComponent: DockSeparator {}
     }
 
-    // Shift+left click opens context menu for all non-separator items
-    MouseArea {
-        anchors.fill: parent
-        z: 20
-        enabled: !isSeparator
-        acceptedButtons: Qt.LeftButton
-        onPressed: (event) => {
-            if (event.modifiers & Qt.ShiftModifier) {
-                appListRoot.openContextMenu(root, appToplevel);
-            } else {
-                event.accepted = false;
-            }
-        }
-    }
-
-    // Drag overlay for pinned non-separator items
+    // Left-click overlay for all non-separator items.
+    // Handles shift+click (context menu) and drag-to-reorder (pinned only).
+    // Right/middle clicks fall through to the RippleButton's MouseArea.
     MouseArea {
         id: dragOverlay
         anchors.fill: parent
         z: 10
-        enabled: appToplevel.pinned && !isSeparator
+        enabled: !isSeparator
         acceptedButtons: Qt.LeftButton
         preventStealing: true
         property real pressX: 0
         property bool dragActive: false
 
         onPressed: (event) => {
+            if (event.modifiers & Qt.ShiftModifier) {
+                appListRoot.openContextMenu(root, appToplevel);
+                return;
+            }
             pressX = event.x;
             root.down = true;
             root.startRipple(event.x, event.y);
         }
         onPositionChanged: (event) => {
-            if (!pressed) return;
+            if (!pressed || !appToplevel.pinned) return;
             var dist = Math.abs(event.x - pressX);
             if (!dragActive && dist > 5) {
                 dragActive = true;
