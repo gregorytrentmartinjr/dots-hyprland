@@ -337,7 +337,8 @@ Item { // Player instance
                         StyledSlider {
                             Layout.preferredWidth: 120
 
-                            configuration: StyledSlider.Configuration.XS
+                            configuration: StyledSlider.Configuration.Wavy
+                            wavy: false
                             highlightColor: blendedColors.colPrimary
                             trackColor: blendedColors.colSecondaryContainer
                             handleColor: blendedColors.colPrimary
