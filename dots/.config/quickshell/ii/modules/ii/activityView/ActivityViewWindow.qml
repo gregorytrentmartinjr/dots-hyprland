@@ -45,6 +45,23 @@ Item {
         }
     }
 
+    // Background mouse area — declared first so it sits underneath everything
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        onClicked: event => {
+            if (event.button === Qt.MiddleButton) {
+                Hyprland.dispatch(`closewindow address:${root.hyprlandClient?.address}`);
+            } else {
+                GlobalStates.activityViewOpen = false;
+                Hyprland.dispatch(`focuswindow address:${root.hyprlandClient?.address}`);
+            }
+        }
+    }
+
     // Window preview card (clipped content)
     Item {
         id: previewCard
@@ -98,7 +115,7 @@ Item {
             border.width: 1
         }
 
-        // Close button
+        // Close button — on top of previewCard and above mouseArea
         Rectangle {
             id: closeButton
             anchors {
@@ -172,23 +189,6 @@ Item {
 
             Behavior on opacity {
                 NumberAnimation { duration: 150 }
-            }
-        }
-    }
-
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        // Don't eat clicks meant for the close button
-        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-        onClicked: event => {
-            if (event.button === Qt.MiddleButton) {
-                Hyprland.dispatch(`closewindow address:${root.hyprlandClient?.address}`);
-            } else {
-                GlobalStates.activityViewOpen = false;
-                Hyprland.dispatch(`focuswindow address:${root.hyprlandClient?.address}`);
             }
         }
     }
