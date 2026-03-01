@@ -52,40 +52,19 @@ Rectangle {
     property real maxWindowWidth: 420
     property real contentPadding: 60
     property real windowSpacing: 30
+    property int maxPerRow: 4
 
     readonly property list<var> toplevels: ToplevelManager.toplevels.values.filter(t => {
         const client = HyprlandData.clientForToplevel(t);
         return client && client.workspace.id === HyprlandData.activeWorkspace?.id;
     })
 
-    // Arrange toplevels into rows that fit the available width
+    // Arrange toplevels into rows of at most maxPerRow
     readonly property list<var> arrangedToplevels: {
-        const maxRowWidth = width - contentPadding * 2;
         const count = toplevels.length;
         const result = [];
-        var i = 0;
-        while (i < count) {
-            var row = [];
-            var rowWidth = 0;
-            var j = i;
-            while (j < count) {
-                const toplevel = toplevels[j];
-                const client = HyprlandData.clientForToplevel(toplevel);
-                if (!client) { j++; continue; }
-                const cw = client.size[0];
-                const ch = client.size[1];
-                const s = Math.min(maxWindowWidth / cw, maxWindowHeight / ch);
-                const scaledW = cw * s;
-                if (rowWidth + scaledW + (row.length > 0 ? windowSpacing : 0) <= maxRowWidth || row.length === 0) {
-                    row.push(toplevel);
-                    rowWidth += scaledW + (row.length > 1 ? windowSpacing : 0);
-                    j++;
-                } else {
-                    break;
-                }
-            }
-            result.push(row);
-            i = j;
+        for (var i = 0; i < count; i += maxPerRow) {
+            result.push(toplevels.slice(i, Math.min(i + maxPerRow, count)));
         }
         return result;
     }
@@ -113,52 +92,35 @@ Rectangle {
         opacity: root.openProgress
     }
 
-    // Window grid
-    Flickable {
-        id: windowFlickable
-        anchors.fill: parent
-        contentWidth: width
-        contentHeight: windowColumn.implicitHeight + root.contentPadding * 2
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
+    // Window grid - centered on screen
+    Column {
+        id: windowColumn
+        anchors.centerIn: parent
+        spacing: root.windowSpacing
 
-        Column {
-            id: windowColumn
-            anchors {
-                top: parent.top
-                topMargin: root.contentPadding
-                horizontalCenter: parent.horizontalCenter
+        opacity: root.openProgress
+        scale: 0.92 + 0.08 * root.openProgress
+        transformOrigin: Item.Center
+
+        Repeater {
+            model: ScriptModel {
+                values: root.arrangedToplevels
             }
-            spacing: root.windowSpacing
+            delegate: Row {
+                id: clientRow
+                required property var modelData
+                spacing: root.windowSpacing
+                anchors.horizontalCenter: parent?.horizontalCenter ?? undefined
 
-            opacity: root.openProgress
-            scale: 0.92 + 0.08 * root.openProgress
-            transformOrigin: Item.Center
-
-            Behavior on opacity {
-                NumberAnimation { duration: 200 }
-            }
-
-            Repeater {
-                model: ScriptModel {
-                    values: root.arrangedToplevels
-                }
-                delegate: Row {
-                    id: clientRow
-                    required property var modelData
-                    spacing: root.windowSpacing
-                    anchors.horizontalCenter: parent?.horizontalCenter ?? undefined
-
-                    Repeater {
-                        model: ScriptModel {
-                            values: clientRow.modelData
-                        }
-                        delegate: ActivityViewWindow {
-                            required property var modelData
-                            toplevel: modelData
-                            maxHeight: root.maxWindowHeight
-                            maxWidth: root.maxWindowWidth
-                        }
+                Repeater {
+                    model: ScriptModel {
+                        values: clientRow.modelData
+                    }
+                    delegate: ActivityViewWindow {
+                        required property var modelData
+                        toplevel: modelData
+                        maxHeight: root.maxWindowHeight
+                        maxWidth: root.maxWindowWidth
                     }
                 }
             }
