@@ -5,6 +5,7 @@ import qs.modules.common
 import qs.modules.common.functions
 import qs.modules.common.models
 import qs.modules.common.widgets
+import qs.modules.ii.overview as Overview
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -13,6 +14,8 @@ import Quickshell.Hyprland
 
 Rectangle {
     id: root
+
+    required property var screen
 
     color: "transparent"
     property real openProgress: 0
@@ -82,9 +85,27 @@ Rectangle {
         opacity: 0.85 * root.openProgress
     }
 
+    // Workspace overview widget at the top
+    Loader {
+        id: overviewLoader
+        anchors {
+            top: parent.top
+            topMargin: 20
+            horizontalCenter: parent.horizontalCenter
+        }
+        active: GlobalStates.activityViewOpen && (Config?.options.overview.enable ?? true)
+        opacity: root.openProgress
+        scale: 0.92 + 0.08 * root.openProgress
+        transformOrigin: Item.Top
+
+        sourceComponent: Overview.OverviewWidget {
+            screen: root.screen
+        }
+    }
+
     // "No windows" message
     StyledText {
-        anchors.centerIn: parent
+        anchors.centerIn: windowArea
         visible: root.toplevels.length === 0
         text: Translation.tr("No windows on this workspace")
         font.pixelSize: Appearance.font.pixelSize.larger
@@ -92,35 +113,47 @@ Rectangle {
         opacity: root.openProgress
     }
 
-    // Window grid - centered on screen
-    Column {
-        id: windowColumn
-        anchors.centerIn: parent
-        spacing: root.windowSpacing
+    // Remaining area below the workspace widget for centering window grid
+    Item {
+        id: windowArea
+        anchors {
+            top: overviewLoader.bottom
+            topMargin: 20
+            bottom: parent.bottom
+            left: parent.left
+            right: parent.right
+        }
 
-        opacity: root.openProgress
-        scale: 0.92 + 0.08 * root.openProgress
-        transformOrigin: Item.Center
+        // Window grid - centered in remaining space
+        Column {
+            id: windowColumn
+            anchors.centerIn: parent
+            spacing: root.windowSpacing
 
-        Repeater {
-            model: ScriptModel {
-                values: root.arrangedToplevels
-            }
-            delegate: Row {
-                id: clientRow
-                required property var modelData
-                spacing: root.windowSpacing
-                anchors.horizontalCenter: parent?.horizontalCenter ?? undefined
+            opacity: root.openProgress
+            scale: 0.92 + 0.08 * root.openProgress
+            transformOrigin: Item.Center
 
-                Repeater {
-                    model: ScriptModel {
-                        values: clientRow.modelData
-                    }
-                    delegate: ActivityViewWindow {
-                        required property var modelData
-                        toplevel: modelData
-                        maxHeight: root.maxWindowHeight
-                        maxWidth: root.maxWindowWidth
+            Repeater {
+                model: ScriptModel {
+                    values: root.arrangedToplevels
+                }
+                delegate: Row {
+                    id: clientRow
+                    required property var modelData
+                    spacing: root.windowSpacing
+                    anchors.horizontalCenter: parent?.horizontalCenter ?? undefined
+
+                    Repeater {
+                        model: ScriptModel {
+                            values: clientRow.modelData
+                        }
+                        delegate: ActivityViewWindow {
+                            required property var modelData
+                            toplevel: modelData
+                            maxHeight: root.maxWindowHeight
+                            maxWidth: root.maxWindowWidth
+                        }
                     }
                 }
             }

@@ -41,6 +41,7 @@ Scope {
             ActivityViewContent {
                 id: activityViewContent
                 anchors.fill: parent
+                screen: panelWindow.screen
 
                 Component.onCompleted: {
                     activityViewContent.forceActiveFocus();
@@ -57,6 +58,10 @@ Scope {
                     function onActivityViewOpenChanged() {
                         if (!GlobalStates.activityViewOpen)
                             activityViewContent.close();
+                    }
+                    function onOverviewOpenChanged() {
+                        if (GlobalStates.overviewOpen)
+                            GlobalStates.activityViewOpen = false;
                     }
                 }
                 onClosed: panelLoader.active = false
