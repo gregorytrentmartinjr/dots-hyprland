@@ -216,10 +216,11 @@ Singleton {
                     name: entry.replace(/^\s*\S+\s+/, ""),
                     iconName: emoji,
                     iconType: LauncherSearchResult.IconType.Text,
-                    verb: Translation.tr("Copy"),
+                    verb: Translation.tr("Paste"),
                     type: Translation.tr("Emoji"),
                     execute: () => {
                         Quickshell.clipboardText = entry.match(/^\s*(\S+)/)?.[1];
+                        Quickshell.execDetached(["bash", "-c", `sleep ${Cliphist.pasteDelay} && ${Cliphist.pressPasteCommand}`]);
                     }
                 });
             }).filter(Boolean);
