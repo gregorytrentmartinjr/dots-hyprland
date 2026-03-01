@@ -27,7 +27,7 @@ Scope { // Scope
             screen: modelData
             visible: !GlobalStates.screenLocked
 
-            property bool reveal: root.pinned || (Config.options?.dock.hoverToReveal && dockMouseArea.containsMouse) || dockApps.requestDockShow || (!ToplevelManager.activeToplevel?.activated) || GlobalStates.overviewOpen
+            property bool reveal: root.pinned || (Config.options?.dock.hoverToReveal && dockMouseArea.containsMouse) || dockApps.requestDockShow || (!ToplevelManager.activeToplevel?.activated)
 
             anchors {
                 bottom: true
@@ -35,14 +35,13 @@ Scope { // Scope
                 right: true
             }
 
-            exclusiveZone: root.pinned ? implicitHeight - 60 - (Appearance.sizes.hyprlandGapsOut) - (Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut) : 0
+            exclusiveZone: root.pinned ? implicitHeight - (Appearance.sizes.hyprlandGapsOut) - (Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut) : 0
 
             implicitWidth: dockBackground.implicitWidth
             WlrLayershell.namespace: "quickshell:dock"
-            WlrLayershell.layer: GlobalStates.overviewOpen ? WlrLayer.Overlay : WlrLayer.Top
             color: "transparent"
 
-            implicitHeight: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut + 60
+            implicitHeight: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut
 
             mask: Region {
                 item: dockMouseArea
@@ -50,15 +49,11 @@ Scope { // Scope
 
             MouseArea {
                 id: dockMouseArea
-                height: (Config.options?.dock.height ?? 70) + Appearance.sizes.elevationMargin + Appearance.sizes.hyprlandGapsOut
+                height: parent.height
                 anchors {
                     top: parent.top
-                    topMargin: 60 + (dockRoot.reveal ? 1 : Config.options?.dock.hoverToReveal ? (dockRoot.implicitHeight - 60 - Config.options.dock.hoverRegionHeight) : (dockRoot.implicitHeight - 60 + 1))
+                    topMargin: dockRoot.reveal ? 1 : Config.options?.dock.hoverToReveal ? (dockRoot.implicitHeight - Config.options.dock.hoverRegionHeight) : (dockRoot.implicitHeight + 1)
                     horizontalCenter: parent.horizontalCenter
-                }
-
-                Behavior on anchors.topMargin {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
                 }
                 implicitWidth: dockHoverRegion.implicitWidth + Appearance.sizes.elevationMargin * 2
                 hoverEnabled: true

@@ -17,99 +17,58 @@ Item {
     property real windowControlsHeight: 30
     property real buttonPadding: 5
 
-    property Item clickedButton: null
-    property Item lastHoveredButton: null
+    property Item lastHoveredButton
     property bool buttonHovered: false
     property bool requestDockShow: previewPopup.show
-
-    function showPreview(button) {
-        clickedButton = button;
-        previewPopup.show = true;
-    }
-    function hidePreview() {
-        previewPopup.fading = true;
-        fadeTimer.restart();
-    }
-
-    // Drag-to-reorder state
-    property bool dragging: false
-    property bool _reordering: false
-    property bool _suppressTranslateAnim: false
-    property int dragSourceIndex: -1
-    property real dragCursorX: 0
-    property real dragStartCursorX: 0
-    property real slotWidth: 0
-    property int dragTargetIndex: {
-        if (!dragging || slotWidth <= 0) return dragSourceIndex;
-        var delta = dragCursorX - dragStartCursorX;
-        var slots = Math.round(delta / slotWidth);
-        var pinnedCount = Config.options.dock.pinnedApps.length;
-        return Math.max(0, Math.min(dragSourceIndex + slots, pinnedCount - 1));
-    }
-
-    function finishDrag() {
-        _suppressTranslateAnim = true;
-        if (dragging && dragSourceIndex !== dragTargetIndex) {
-            _reordering = true;
-            TaskbarApps.reorderPinned(dragSourceIndex, dragTargetIndex);
-        }
-        dragging = false;
-        dragSourceIndex = -1;
-        dragCursorX = 0;
-        dragStartCursorX = 0;
-        Qt.callLater(function() {
-            _reordering = false;
-            _suppressTranslateAnim = false;
-        });
-    }
-
-    function cancelDrag() {
-        _suppressTranslateAnim = true;
-        dragging = false;
-        dragSourceIndex = -1;
-        dragCursorX = 0;
-        dragStartCursorX = 0;
-        Qt.callLater(function() { _suppressTranslateAnim = false; });
-    }
-
-
-    property alias listViewRef: listView
-    property real mouseXInList: -9999
-    property bool listHovered: false
-    property real maxScale: 2.2
-    property real sigma: 60
-
-    function scaleForX(itemCenterX) {
-        if (!listHovered) return 1.0;
-        const dist = itemCenterX - mouseXInList;
-        return 1.0 + (maxScale - 1.0) * Math.exp(-(dist * dist) / (2 * sigma * sigma));
-    }
-
-    // Hover-only overlay — acceptedButtons: Qt.NoButton means it never steals clicks
-    // but still receives hover position changes independently of dragEater
-    MouseArea {
-        id: listHoverArea
-        anchors.fill: listView
-        hoverEnabled: true
-        acceptedButtons: Qt.NoButton
-        z: 1
-        onPositionChanged: mouse => {
-            root.mouseXInList = mouse.x + listView.contentX;
-        }
-        onEntered:  root.listHovered = true
-        onExited:   root.listHovered = false
-    }
+    
+    property int hoveredIndex: -1
+    property real maxScale: 1.5
+    property real influenceRadius: 2  
 
     Layout.fillHeight: true
     Layout.topMargin: Appearance.sizes.hyprlandGapsOut
     implicitWidth: listView.implicitWidth
     
+    function calculateScale(index) {
+        if (hoveredIndex < 0) return 1.0;
+        
+        const distance = Math.abs(index - hoveredIndex);
+        if (distance === 0) return maxScale;
+        if (distance > influenceRadius) return 1.0;
+        
+        const ratio = 1 - (distance / (influenceRadius + 1));
+        return 1.0 + (maxScale - 1.0) * Math.pow(ratio, 2);
+    }
+    
+    MouseArea {
+        anchors.fill: listView
+        hoverEnabled: true
+        propagateComposedEvents: true
+        z: -1  
+        
+        onPositionChanged: {
+            const item = listView.itemAt(mouseX + listView.contentX, mouseY);
+            if (item && item.buttonIndex !== undefined) {
+                root.hoveredIndex = item.buttonIndex;
+            } else {
+                root.hoveredIndex = -1;
+            }
+        }
+        
+        onExited: {
+            root.hoveredIndex = -1;
+        }
+        
+        onPressed: mouse.accepted = false
+        onReleased: mouse.accepted = false
+        onClicked: mouse.accepted = false
+        onDoubleClicked: mouse.accepted = false
+        onEntered: mouse.accepted = false
+    }
+    
     StyledListView {
         id: listView
         spacing: 2
-        clip: false
-        interactive: false
-        animateAppearance: !root._reordering
         orientation: ListView.Horizontal
         anchors {
             top: parent.top
@@ -126,53 +85,94 @@ Item {
             values: TaskbarApps.apps
         }
         delegate: DockAppButton {
-            id: delegateButton
             required property var modelData
             required property int index
             appToplevel: modelData
             appListRoot: root
-            delegateIndex: {
-                // Index within pinnedApps only (not the full list)
-                var pinnedApps = Config.options?.dock.pinnedApps ?? [];
-                return pinnedApps.indexOf(modelData.appId.toLowerCase());
-            }
             buttonIndex: index
 
             topInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
             bottomInset: Appearance.sizes.hyprlandGapsOut + root.buttonPadding
-            hoverScale: root.scaleForX(x + width / 2)
+            
+            hoverScale: root.calculateScale(index)
+            
+            Loader {
+                anchors.fill: parent
+                active: true
+                z: 100  
+                sourceComponent: MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    propagateComposedEvents: true
+                    
+                    onEntered: {
+                        root.lastHoveredButton = parent.parent;
+                        root.buttonHovered = true;
+                        root.hoveredIndex = parent.parent.buttonIndex;
+                    }
+                    
+                    onExited: {
+                        if (root.lastHoveredButton === parent.parent) {
+                            root.buttonHovered = false;
+                        }
+                        Qt.callLater(() => {
+                            if (!root.buttonHovered) {
+                                root.hoveredIndex = -1;
+                            }
+                        });
+                    }
+                    
+                    onPositionChanged: {
+                        root.hoveredIndex = parent.parent.buttonIndex;
+                    }
+                    
+                    onPressed: mouse.accepted = false
+                    onReleased: mouse.accepted = false
+                    onClicked: mouse.accepted = false
+                    onDoubleClicked: mouse.accepted = false
+                }
+            }
         }
     }
 
     PopupWindow {
         id: previewPopup
-        property var appTopLevel: root.clickedButton?.appToplevel
+        property var appTopLevel: root.lastHoveredButton?.appToplevel
+        property bool allPreviewsReady: false
+        Connections {
+            target: root
+            function onLastHoveredButtonChanged() {
+                previewPopup.allPreviewsReady = false;
+            } 
+        }
+        function updatePreviewReadiness() {
+            for(var i = 0; i < previewRowLayout.children.length; i++) {
+                const view = previewRowLayout.children[i];
+                if (view.hasContent === false) {
+                    allPreviewsReady = false;
+                    return;
+                }
+            }
+            allPreviewsReady = true;
+        }
+        property bool shouldShow: {
+            const hoverConditions = (popupMouseArea.containsMouse || root.buttonHovered)
+            return hoverConditions && allPreviewsReady;
+        }
         property bool show: false
-        property bool fading: false
 
-        onShowChanged: {
-            if (show) {
-                fading = false;
-                dismissTimer.restart();
+        onShouldShowChanged: {
+            if (shouldShow) {
+                updateTimer.restart();
+            } else {
+                updateTimer.restart();
             }
         }
-
         Timer {
-            id: dismissTimer
-            interval: 3000
+            id: updateTimer
+            interval: 100
             onTriggered: {
-                previewPopup.fading = true;
-                fadeTimer.restart();
-            }
-        }
-
-        Timer {
-            id: fadeTimer
-            interval: Appearance.animation.elementMoveFast.duration
-            onTriggered: {
-                previewPopup.show = false;
-                previewPopup.fading = false;
-                root.clickedButton = null;
+                previewPopup.show = previewPopup.shouldShow
             }
         }
         anchor {
@@ -194,15 +194,19 @@ Item {
             implicitHeight: root.maxWindowPreviewHeight + root.windowControlsHeight + Appearance.sizes.elevationMargin * 2
             hoverEnabled: true
             x: {
-                const itemCenter = root.QsWindow?.mapFromItem(root.clickedButton, root.clickedButton?.width / 2, 0);
+                const itemCenter = root.QsWindow?.mapFromItem(root.lastHoveredButton, root.lastHoveredButton?.width / 2, 0);
                 return itemCenter.x - width / 2
             }
             
-
+            onExited: {
+                if (!root.buttonHovered) {
+                    root.hoveredIndex = -1;
+                }
+            }
             
             StyledRectangularShadow {
                 target: popupBackground
-                opacity: (previewPopup.show && !previewPopup.fading) ? 1 : 0
+                opacity: previewPopup.show ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity {
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
@@ -211,7 +215,7 @@ Item {
             Rectangle {
                 id: popupBackground
                 property real padding: 5
-                opacity: (previewPopup.show && !previewPopup.fading) ? 1 : 0
+                opacity: previewPopup.show ? 1 : 0
                 visible: opacity > 0
                 Behavior on opacity {
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
@@ -246,7 +250,6 @@ Item {
                                 windowButton.modelData?.close();
                             }
                             onClicked: {
-                                root.hidePreview();
                                 windowButton.modelData?.activate();
                             }
                             contentItem: ColumnLayout {
@@ -282,17 +285,19 @@ Item {
                                             color: Appearance.m3colors.m3onSurface
                                         }
                                         onClicked: {
-                                            root.hidePreview();
                                             windowButton.modelData?.close();
                                         }
                                     }
                                 }
                                 ScreencopyView {
                                     id: screencopyView
-                                    captureSource: previewPopup.show ? windowButton.modelData : null
+                                    captureSource: previewPopup ? windowButton.modelData : null
                                     live: true
                                     paintCursor: true
                                     constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
+                                    onHasContentChanged: {
+                                        previewPopup.updatePreviewReadiness();
+                                    }
                                     layer.enabled: true
                                     layer.effect: OpacityMask {
                                         maskSource: Rectangle {
@@ -309,5 +314,4 @@ Item {
             }
         }
     }
-
 }

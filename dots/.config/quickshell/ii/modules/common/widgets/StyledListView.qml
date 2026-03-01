@@ -69,19 +69,17 @@ ListView {
     }
 
     add: Transition {
-        enabled: animateAppearance
-        animations: [
+        animations: animateAppearance ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 properties: popin ? "opacity,scale" : "opacity",
                 from: 0,
                 to: 1,
             }),
-        ]
+        ] : []
     }
 
     addDisplaced: Transition {
-        enabled: animateAppearance
-        animations: [
+        animations: animateAppearance ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "y",
             }),
@@ -89,12 +87,11 @@ ListView {
                 properties: popin ? "opacity,scale" : "opacity",
                 to: 1,
             }),
-        ]
+        ] : []
     }
-
+    
     displaced: Transition {
-        enabled: root.animateMovement
-        animations: [
+        animations: root.animateMovement ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "y",
             }),
@@ -102,12 +99,11 @@ ListView {
                 properties: "opacity,scale",
                 to: 1,
             }),
-        ]
+        ] : []
     }
 
     move: Transition {
-        enabled: root.animateMovement
-        animations: [
+        animations: root.animateMovement ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "y",
             }),
@@ -115,11 +111,10 @@ ListView {
                 properties: "opacity,scale",
                 to: 1,
             }),
-        ]
+        ] : []
     }
     moveDisplaced: Transition {
-        enabled: root.animateMovement
-        animations: [
+        animations: root.animateMovement ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "y",
             }),
@@ -127,12 +122,11 @@ ListView {
                 properties: "opacity,scale",
                 to: 1,
             }),
-        ]
+        ] : []
     }
 
     remove: Transition {
-        enabled: animateAppearance
-        animations: [
+        animations: animateAppearance ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "x",
                 to: root.width + root.removeOvershoot,
@@ -141,13 +135,12 @@ ListView {
                 property: "opacity",
                 to: 0,
             })
-        ]
+        ] : []
     }
 
     // This is movement when something is removed, not removing animation!
-    removeDisplaced: Transition {
-        enabled: animateAppearance
-        animations: [
+    removeDisplaced: Transition { 
+        animations: animateAppearance ? [
             Appearance?.animation.elementMove.numberAnimation.createObject(this, {
                 property: "y",
             }),
@@ -155,6 +148,6 @@ ListView {
                 properties: "opacity,scale",
                 to: 1,
             }),
-        ]
+        ] : []
     }
 }
