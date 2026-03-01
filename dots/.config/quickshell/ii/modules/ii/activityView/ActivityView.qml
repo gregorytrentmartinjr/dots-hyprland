@@ -28,6 +28,7 @@ Scope {
             WlrLayershell.namespace: "quickshell:activityView"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            exclusionMode: ExclusionMode.Ignore
             color: Qt.rgba(0, 0, 0, 0.01)
 
             anchors {

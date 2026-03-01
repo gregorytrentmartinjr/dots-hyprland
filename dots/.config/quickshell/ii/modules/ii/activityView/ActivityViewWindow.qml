@@ -45,8 +45,8 @@ Item {
         }
     }
 
-    // Window preview card
-    Rectangle {
+    // Window preview card (clipped content)
+    Item {
         id: previewCard
         anchors {
             top: parent.top
@@ -54,33 +54,46 @@ Item {
         }
         width: root.scaledWidth
         height: root.scaledHeight
-        radius: Appearance.rounding.large
-        color: Appearance.colors.colSurfaceContainerLow
 
-        layer.enabled: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: previewCard.width
-                height: previewCard.height
-                radius: previewCard.radius
+        // Clipped inner content (screenshot + hover overlay)
+        Rectangle {
+            id: previewClipped
+            anchors.fill: parent
+            radius: Appearance.rounding.large
+            color: Appearance.colors.colSurfaceContainerLow
+
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: previewClipped.width
+                    height: previewClipped.height
+                    radius: previewClipped.radius
+                }
+            }
+
+            ScreencopyView {
+                anchors.fill: parent
+                captureSource: GlobalStates.activityViewOpen ? root.toplevel : null
+                live: true
+            }
+
+            // Semi-transparent overlay (matches regular overview windows)
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: mouseArea.containsPress
+                    ? ColorUtils.transparentize(Appearance.colors.colLayer2Active, 0.5)
+                    : root.hovered
+                        ? ColorUtils.transparentize(Appearance.colors.colLayer2Hover, 0.7)
+                        : ColorUtils.transparentize(Appearance.colors.colLayer2)
             }
         }
 
-        ScreencopyView {
-            anchors.fill: parent
-            captureSource: GlobalStates.activityViewOpen ? root.toplevel : null
-            live: true
-        }
-
-        // Semi-transparent overlay + outline (matches regular overview windows)
+        // Border outline (outside the mask so it's not clipped)
         Rectangle {
             anchors.fill: parent
-            radius: parent.radius
-            color: mouseArea.containsPress
-                ? ColorUtils.transparentize(Appearance.colors.colLayer2Active, 0.5)
-                : root.hovered
-                    ? ColorUtils.transparentize(Appearance.colors.colLayer2Hover, 0.7)
-                    : ColorUtils.transparentize(Appearance.colors.colLayer2)
+            radius: Appearance.rounding.large
+            color: "transparent"
             border.color: ColorUtils.transparentize(Appearance.m3colors.m3outline, 0.88)
             border.width: 1
         }
