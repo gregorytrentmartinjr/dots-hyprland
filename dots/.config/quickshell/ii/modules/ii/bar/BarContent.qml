@@ -115,6 +115,7 @@ Item { // Bar content region
 
             Loader {
                 active: Config.options.bar.resources.enable
+                visible: active
                 Layout.fillWidth: root.useShortenedForm === 2
                 sourceComponent: Resources {
                     alwaysShowAllResources: root.useShortenedForm === 2
