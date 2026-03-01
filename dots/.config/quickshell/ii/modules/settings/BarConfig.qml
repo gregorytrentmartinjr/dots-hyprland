@@ -239,6 +239,19 @@ ContentPage {
     }
 
     ContentSection {
+        icon: "monitor_heart"
+        title: Translation.tr("Resource usage")
+        ConfigSwitch {
+            buttonIcon: "check"
+            text: Translation.tr("Enable")
+            checked: Config.options.bar.resources.enable
+            onCheckedChanged: {
+                Config.options.bar.resources.enable = checked;
+            }
+        }
+    }
+
+    ContentSection {
         icon: "cloud"
         title: Translation.tr("Weather")
         ConfigSwitch {
