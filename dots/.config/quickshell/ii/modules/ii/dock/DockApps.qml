@@ -18,12 +18,14 @@ Item {
     property real buttonPadding: 5
 
     property Item clickedButton: null
+    property Item anchorButton: null
     property Item lastHoveredButton: null
     property bool buttonHovered: false
     property bool requestDockShow: previewPopup.show || contextMenu.isOpen
 
     function showPreview(button) {
         clickedButton = button;
+        anchorButton = button;
         previewPopup.show = true;
     }
     function hidePreview() {
@@ -198,8 +200,13 @@ Item {
                 root.clickedButton = null;
             }
         }
+        onVisibleChanged: {
+            if (!visible) {
+                root.anchorButton = null;
+            }
+        }
         anchor {
-            item: root.clickedButton
+            item: root.anchorButton
             gravity: Edges.Top
             edges: Edges.Top
             adjustment: PopupAdjustment.SlideX
@@ -238,12 +245,6 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 implicitHeight: previewRowLayout.implicitHeight + padding * 2
                 implicitWidth: previewRowLayout.implicitWidth + padding * 2
-                Behavior on implicitWidth {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                }
-                Behavior on implicitHeight {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                }
 
                 RowLayout {
                     id: previewRowLayout
