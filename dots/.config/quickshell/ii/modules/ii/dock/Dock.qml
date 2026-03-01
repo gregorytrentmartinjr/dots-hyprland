@@ -37,6 +37,13 @@ Scope { // Scope
 
             exclusiveZone: root.pinned ? implicitHeight - 60 - (Appearance.sizes.hyprlandGapsOut) - (Appearance.sizes.elevationMargin - Appearance.sizes.hyprlandGapsOut) : 0
 
+            Component.onCompleted: {
+                GlobalFocusGrab.addPersistent(dockRoot);
+            }
+            Component.onDestruction: {
+                GlobalFocusGrab.removePersistent(dockRoot);
+            }
+
             implicitWidth: dockBackground.implicitWidth
             WlrLayershell.namespace: "quickshell:dock"
             WlrLayershell.layer: GlobalStates.overviewOpen ? WlrLayer.Overlay : WlrLayer.Top
