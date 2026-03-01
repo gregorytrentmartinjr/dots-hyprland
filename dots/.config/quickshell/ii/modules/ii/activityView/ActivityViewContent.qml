@@ -85,27 +85,9 @@ Rectangle {
         opacity: 0.85 * root.openProgress
     }
 
-    // Workspace overview widget at the top
-    Loader {
-        id: overviewLoader
-        anchors {
-            top: parent.top
-            topMargin: 20
-            horizontalCenter: parent.horizontalCenter
-        }
-        active: GlobalStates.activityViewOpen && (Config?.options.overview.enable ?? true)
-        opacity: root.openProgress
-        scale: 0.92 + 0.08 * root.openProgress
-        transformOrigin: Item.Top
-
-        sourceComponent: Overview.OverviewWidget {
-            screen: root.screen
-        }
-    }
-
     // "No windows" message
     StyledText {
-        anchors.centerIn: windowArea
+        anchors.centerIn: parent
         visible: root.toplevels.length === 0
         text: Translation.tr("No windows on this workspace")
         font.pixelSize: Appearance.font.pixelSize.larger
@@ -113,47 +95,47 @@ Rectangle {
         opacity: root.openProgress
     }
 
-    // Remaining area below the workspace widget for centering window grid
-    Item {
-        id: windowArea
-        anchors {
-            top: overviewLoader.bottom
-            topMargin: 20
-            bottom: parent.bottom
-            left: parent.left
-            right: parent.right
+    // Everything in one centered column
+    Column {
+        id: mainColumn
+        anchors.centerIn: parent
+        spacing: root.windowSpacing
+
+        opacity: root.openProgress
+        scale: 0.92 + 0.08 * root.openProgress
+        transformOrigin: Item.Center
+
+        // Workspace overview widget
+        Loader {
+            id: overviewLoader
+            anchors.horizontalCenter: parent.horizontalCenter
+            active: GlobalStates.activityViewOpen && (Config?.options.overview.enable ?? true)
+
+            sourceComponent: Overview.OverviewWidget {
+                screen: root.screen
+            }
         }
 
-        // Window grid - centered in remaining space
-        Column {
-            id: windowColumn
-            anchors.centerIn: parent
-            spacing: root.windowSpacing
+        // Window rows
+        Repeater {
+            model: ScriptModel {
+                values: root.arrangedToplevels
+            }
+            delegate: Row {
+                id: clientRow
+                required property var modelData
+                spacing: root.windowSpacing
+                anchors.horizontalCenter: parent?.horizontalCenter ?? undefined
 
-            opacity: root.openProgress
-            scale: 0.92 + 0.08 * root.openProgress
-            transformOrigin: Item.Center
-
-            Repeater {
-                model: ScriptModel {
-                    values: root.arrangedToplevels
-                }
-                delegate: Row {
-                    id: clientRow
-                    required property var modelData
-                    spacing: root.windowSpacing
-                    anchors.horizontalCenter: parent?.horizontalCenter ?? undefined
-
-                    Repeater {
-                        model: ScriptModel {
-                            values: clientRow.modelData
-                        }
-                        delegate: ActivityViewWindow {
-                            required property var modelData
-                            toplevel: modelData
-                            maxHeight: root.maxWindowHeight
-                            maxWidth: root.maxWindowWidth
-                        }
+                Repeater {
+                    model: ScriptModel {
+                        values: clientRow.modelData
+                    }
+                    delegate: ActivityViewWindow {
+                        required property var modelData
+                        toplevel: modelData
+                        maxHeight: root.maxWindowHeight
+                        maxWidth: root.maxWindowWidth
                     }
                 }
             }
