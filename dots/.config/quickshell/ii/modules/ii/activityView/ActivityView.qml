@@ -28,7 +28,7 @@ Scope {
             WlrLayershell.namespace: "quickshell:activityView"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-            color: "transparent"
+            color: Qt.rgba(0, 0, 0, 0.01)
 
             anchors {
                 top: true

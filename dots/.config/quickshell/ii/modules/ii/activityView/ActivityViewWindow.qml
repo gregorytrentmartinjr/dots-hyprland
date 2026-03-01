@@ -56,14 +56,6 @@ Item {
         height: root.scaledHeight
         radius: Appearance.rounding.large
         color: Appearance.colors.colSurfaceContainerLow
-        border.color: root.hovered
-            ? Appearance.colors.colSecondary
-            : ColorUtils.transparentize(Appearance.m3colors.m3outline, 0.85)
-        border.width: root.hovered ? 2 : 1
-
-        Behavior on border.color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-        }
 
         layer.enabled: true
         layer.effect: OpacityMask {
@@ -80,7 +72,7 @@ Item {
             live: true
         }
 
-        // Hover overlay
+        // Semi-transparent overlay + outline (matches regular overview windows)
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
@@ -88,7 +80,9 @@ Item {
                 ? ColorUtils.transparentize(Appearance.colors.colLayer2Active, 0.5)
                 : root.hovered
                     ? ColorUtils.transparentize(Appearance.colors.colLayer2Hover, 0.7)
-                    : "transparent"
+                    : ColorUtils.transparentize(Appearance.colors.colLayer2)
+            border.color: ColorUtils.transparentize(Appearance.m3colors.m3outline, 0.88)
+            border.width: 1
         }
 
         // Close button
