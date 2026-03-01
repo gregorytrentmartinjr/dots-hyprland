@@ -21,15 +21,20 @@ Item {
     property Item anchorButton: null
     property Item lastHoveredButton: null
     property bool buttonHovered: false
-    property bool requestDockShow: previewPopup.show || contextMenu.isOpen
+    property bool previewShow: false
+    property bool previewFading: false
+    property bool requestDockShow: previewShow || contextMenu.isOpen
 
     function showPreview(button) {
         clickedButton = button;
         anchorButton = button;
-        previewPopup.show = true;
+        previewFading = false;
+        previewLoader.active = true;
+        previewShow = true;
+        dismissTimer.restart();
     }
     function hidePreview() {
-        previewPopup.fading = true;
+        previewFading = true;
         fadeTimer.restart();
     }
 
@@ -92,9 +97,11 @@ Item {
         // Having two PopupWindows alive at the same time crashes Quickshell.
         dismissTimer.stop();
         fadeTimer.stop();
-        previewPopup.show = false;
-        previewPopup.fading = false;
+        previewShow = false;
+        previewFading = false;
+        previewLoader.active = false;
         clickedButton = null;
+        anchorButton = null;
         contextMenu.open(button, appToplevelData);
     }
 
@@ -105,7 +112,7 @@ Item {
     property real sigma: 60
 
     function scaleForX(itemCenterX) {
-        if (!listHovered || previewPopup.show) return 1.0;
+        if (!listHovered || previewShow) return 1.0;
         const dist = itemCenterX - mouseXInList;
         return 1.0 + (maxScale - 1.0) * Math.exp(-(dist * dist) / (2 * sigma * sigma));
     }
@@ -128,7 +135,27 @@ Item {
     Layout.fillHeight: true
     Layout.topMargin: Appearance.sizes.hyprlandGapsOut
     implicitWidth: listView.implicitWidth
-    
+
+    Timer {
+        id: dismissTimer
+        interval: 3000
+        onTriggered: {
+            root.hidePreview();
+        }
+    }
+
+    Timer {
+        id: fadeTimer
+        interval: Appearance.animation.elementMoveFast.duration
+        onTriggered: {
+            root.previewShow = false;
+            root.previewFading = false;
+            previewLoader.active = false;
+            root.clickedButton = null;
+            root.anchorButton = null;
+        }
+    }
+
     StyledListView {
         id: listView
         spacing: 2
@@ -169,151 +196,122 @@ Item {
         }
     }
 
-    PopupWindow {
-        id: previewPopup
-        property var appTopLevel: root.clickedButton?.appToplevel
-        property bool show: false
-        property bool fading: false
+    Loader {
+        id: previewLoader
+        active: false
+        sourceComponent: PopupWindow {
+            id: previewPopup
+            visible: true
 
-        onShowChanged: {
-            if (show) {
-                fading = false;
-                dismissTimer.restart();
+            anchor {
+                item: root.anchorButton
+                gravity: Edges.Top
+                edges: Edges.Top
+                adjustment: PopupAdjustment.SlideX
             }
-        }
+            color: "transparent"
+            implicitWidth: popupBackground.implicitWidth + Appearance.sizes.elevationMargin * 2
+            implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2
 
-        Timer {
-            id: dismissTimer
-            interval: 3000
-            onTriggered: {
-                previewPopup.fading = true;
-                fadeTimer.restart();
-            }
-        }
+            MouseArea {
+                id: popupMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
 
-        Timer {
-            id: fadeTimer
-            interval: Appearance.animation.elementMoveFast.duration
-            onTriggered: {
-                previewPopup.show = false;
-                previewPopup.fading = false;
-            }
-        }
-        onVisibleChanged: {
-            if (!visible) {
-                root.clickedButton = null;
-                root.anchorButton = null;
-            }
-        }
-        anchor {
-            item: root.anchorButton
-            gravity: Edges.Top
-            edges: Edges.Top
-            adjustment: PopupAdjustment.SlideX
-        }
-        visible: popupBackground.visible
-        color: "transparent"
-        implicitWidth: popupBackground.implicitWidth + Appearance.sizes.elevationMargin * 2
-        implicitHeight: popupBackground.implicitHeight + Appearance.sizes.elevationMargin * 2
-
-        MouseArea {
-            id: popupMouseArea
-            anchors.fill: parent
-            hoverEnabled: true
-
-            StyledRectangularShadow {
-                target: popupBackground
-                opacity: (previewPopup.show && !previewPopup.fading) ? 1 : 0
-                visible: opacity > 0
-                Behavior on opacity {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                StyledRectangularShadow {
+                    target: popupBackground
+                    opacity: (root.previewShow && !root.previewFading) ? 1 : 0
+                    visible: opacity > 0
+                    Behavior on opacity {
+                        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    }
                 }
-            }
-            Rectangle {
-                id: popupBackground
-                property real padding: 5
-                opacity: (previewPopup.show && !previewPopup.fading) ? 1 : 0
-                visible: opacity > 0
-                Behavior on opacity {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                }
-                clip: true
-                color: Appearance.m3colors.m3surfaceContainer
-                radius: Appearance.rounding.normal
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Appearance.sizes.elevationMargin
-                anchors.horizontalCenter: parent.horizontalCenter
-                implicitHeight: previewRowLayout.implicitHeight + padding * 2
-                implicitWidth: previewRowLayout.implicitWidth + padding * 2
+                Rectangle {
+                    id: popupBackground
+                    property real padding: 5
+                    opacity: (root.previewShow && !root.previewFading) ? 1 : 0
+                    visible: opacity > 0
+                    Behavior on opacity {
+                        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                    }
+                    clip: true
+                    color: Appearance.m3colors.m3surfaceContainer
+                    radius: Appearance.rounding.normal
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Appearance.sizes.elevationMargin
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    implicitHeight: previewRowLayout.implicitHeight + padding * 2
+                    implicitWidth: previewRowLayout.implicitWidth + padding * 2
 
-                RowLayout {
-                    id: previewRowLayout
-                    anchors.centerIn: parent
-                    Repeater {
-                        model: ScriptModel {
-                            values: previewPopup.appTopLevel?.toplevels ?? []
-                        }
-                        RippleButton {
-                            id: windowButton
-                            required property var modelData
-                            padding: 0
-                            middleClickAction: () => {
-                                windowButton.modelData?.close();
+                    RowLayout {
+                        id: previewRowLayout
+                        anchors.centerIn: parent
+                        Repeater {
+                            model: ScriptModel {
+                                values: root.clickedButton?.appToplevel?.toplevels ?? []
                             }
-                            onClicked: {
-                                root.hidePreview();
-                                windowButton.modelData?.activate();
-                            }
-                            contentItem: ColumnLayout {
-                                implicitWidth: screencopyView.implicitWidth
-                                implicitHeight: screencopyView.implicitHeight
-
-                                ButtonGroup {
-                                    contentWidth: parent.width - anchors.margins * 2
-                                    WrapperRectangle {
-                                        Layout.fillWidth: true
-                                        color: ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
-                                        radius: Appearance.rounding.small
-                                        margin: 5
-                                        StyledText {
-                                            Layout.fillWidth: true
-                                            font.pixelSize: Appearance.font.pixelSize.small
-                                            text: windowButton.modelData?.title
-                                            elide: Text.ElideRight
-                                            color: Appearance.m3colors.m3onSurface
-                                        }
-                                    }
-                                    GroupButton {
-                                        id: closeButton
-                                        colBackground: ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
-                                        baseWidth: windowControlsHeight
-                                        baseHeight: windowControlsHeight
-                                        buttonRadius: Appearance.rounding.full
-                                        contentItem: MaterialSymbol {
-                                            anchors.centerIn: parent
-                                            horizontalAlignment: Text.AlignHCenter
-                                            text: "close"
-                                            iconSize: Appearance.font.pixelSize.normal
-                                            color: Appearance.m3colors.m3onSurface
-                                        }
-                                        onClicked: {
-                                            root.hidePreview();
-                                            windowButton.modelData?.close();
-                                        }
-                                    }
+                            RippleButton {
+                                id: windowButton
+                                required property var modelData
+                                padding: 0
+                                middleClickAction: () => {
+                                    windowButton.modelData?.close();
                                 }
-                                ScreencopyView {
-                                    id: screencopyView
-                                    captureSource: previewPopup.visible ? windowButton.modelData : null
-                                    live: true
-                                    paintCursor: true
-                                    constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
-                                    layer.enabled: true
-                                    layer.effect: OpacityMask {
-                                        maskSource: Rectangle {
-                                            width: screencopyView.width
-                                            height: screencopyView.height
+                                onClicked: {
+                                    root.hidePreview();
+                                    windowButton.modelData?.activate();
+                                }
+                                contentItem: ColumnLayout {
+                                    implicitWidth: screencopyView.implicitWidth
+                                    implicitHeight: screencopyView.implicitHeight
+
+                                    ButtonGroup {
+                                        contentWidth: parent.width - anchors.margins * 2
+                                        WrapperRectangle {
+                                            Layout.fillWidth: true
+                                            color: ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
                                             radius: Appearance.rounding.small
+                                            margin: 5
+                                            StyledText {
+                                                Layout.fillWidth: true
+                                                font.pixelSize: Appearance.font.pixelSize.small
+                                                text: windowButton.modelData?.title
+                                                elide: Text.ElideRight
+                                                color: Appearance.m3colors.m3onSurface
+                                            }
+                                        }
+                                        GroupButton {
+                                            id: closeButton
+                                            colBackground: ColorUtils.transparentize(Appearance.colors.colSurfaceContainer)
+                                            baseWidth: windowControlsHeight
+                                            baseHeight: windowControlsHeight
+                                            buttonRadius: Appearance.rounding.full
+                                            contentItem: MaterialSymbol {
+                                                anchors.centerIn: parent
+                                                horizontalAlignment: Text.AlignHCenter
+                                                text: "close"
+                                                iconSize: Appearance.font.pixelSize.normal
+                                                color: Appearance.m3colors.m3onSurface
+                                            }
+                                            onClicked: {
+                                                root.hidePreview();
+                                                windowButton.modelData?.close();
+                                            }
+                                        }
+                                    }
+                                    ScreencopyView {
+                                        id: screencopyView
+                                        captureSource: windowButton.modelData
+                                        live: true
+                                        paintCursor: true
+                                        constraintSize: Qt.size(root.maxWindowPreviewWidth, root.maxWindowPreviewHeight)
+                                        layer.enabled: true
+                                        layer.effect: OpacityMask {
+                                            maskSource: Rectangle {
+                                                width: screencopyView.width
+                                                height: screencopyView.height
+                                                radius: Appearance.rounding.small
+                                            }
                                         }
                                     }
                                 }
