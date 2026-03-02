@@ -15,7 +15,8 @@ RippleButton {
     id: root
     property LauncherSearchResult entry
     property string query
-    property bool entryShown: entry?.shown ?? true
+    property bool isSeparator: entry?.isSeparator ?? false
+    property bool entryShown: isSeparator || (entry?.shown ?? true)
     property string itemType: entry?.type ?? Translation.tr("App")
     property string itemName: entry?.name ?? ""
     property var iconType: entry?.iconType
@@ -36,19 +37,38 @@ RippleButton {
     property bool blurImage: entry?.blurImage ?? false
     
     visible: root.entryShown
+    enabled: !root.isSeparator
+    focusPolicy: root.isSeparator ? Qt.NoFocus : Qt.StrongFocus
     property int horizontalMargin: 10
     property int buttonHorizontalPadding: 10
     property int buttonVerticalPadding: 6
     property bool keyboardDown: false
 
-    implicitHeight: rowLayout.implicitHeight + root.buttonVerticalPadding * 2
-    implicitWidth: rowLayout.implicitWidth + root.buttonHorizontalPadding * 2
-    buttonRadius: Appearance.rounding.normal
-    colBackground: (root.down || root.keyboardDown) ? Appearance.colors.colPrimaryContainerActive : 
-        ((root.hovered || root.focus) ? Appearance.colors.colPrimaryContainer : 
-        ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 1))
-    colBackgroundHover: Appearance.colors.colPrimaryContainer
-    colRipple: Appearance.colors.colPrimaryContainerActive
+    implicitHeight: root.isSeparator ? separatorItem.implicitHeight : (rowLayout.implicitHeight + root.buttonVerticalPadding * 2)
+    implicitWidth: root.isSeparator ? separatorItem.implicitWidth : (rowLayout.implicitWidth + root.buttonHorizontalPadding * 2)
+    buttonRadius: root.isSeparator ? 0 : Appearance.rounding.normal
+    colBackground: root.isSeparator ? "transparent" :
+        ((root.down || root.keyboardDown) ? Appearance.colors.colPrimaryContainerActive :
+        ((root.hovered || root.focus) ? Appearance.colors.colPrimaryContainer :
+        ColorUtils.transparentize(Appearance.colors.colPrimaryContainer, 1)))
+    colBackgroundHover: root.isSeparator ? "transparent" : Appearance.colors.colPrimaryContainer
+    colRipple: root.isSeparator ? "transparent" : Appearance.colors.colPrimaryContainerActive
+
+    // Separator divider line
+    Item {
+        id: separatorItem
+        visible: root.isSeparator
+        anchors.left: parent.left
+        anchors.right: parent.right
+        implicitHeight: 13
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: parent.width - 40
+            height: 1
+            color: Appearance.colors.colOutlineVariant
+        }
+    }
 
     property string highlightPrefix: `<u><font color="${Appearance.colors.colPrimary}">`
     property string highlightSuffix: `</font></u>`
@@ -125,6 +145,7 @@ RippleButton {
 
     RowLayout {
         id: rowLayout
+        visible: !root.isSeparator
         spacing: iconLoader.sourceComponent === null ? 0 : 10
         anchors.fill: parent
         anchors.leftMargin: root.horizontalMargin + root.buttonHorizontalPadding
