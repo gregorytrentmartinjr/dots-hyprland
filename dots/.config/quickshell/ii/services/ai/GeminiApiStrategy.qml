@@ -136,9 +136,6 @@ ApiStrategy {
                     const functionCall = part.functionCall;
                     message.functionName = functionCall.name;
                     message.functionCall = functionCall.name;
-                    const newContent = `\n\n[[ Function: ${functionCall.name}(${JSON.stringify(functionCall.args, null, 2)}) ]]\n`
-                    message.rawContent += newContent;
-                    message.content += newContent;
                     return { functionCall: { name: functionCall.name, args: functionCall.args }, finished: finished };
                 }
 
