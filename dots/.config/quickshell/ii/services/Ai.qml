@@ -762,15 +762,15 @@ Singleton {
     }
 
     function createFunctionOutputMessage(name, output, includeOutputInChat = true) {
+        const displayContent = includeOutputInChat ? `<think>\n${output}\n</think>` : "";
         return aiMessageComponent.createObject(root, {
             "role": "user",
-            "content": `[[ Output of ${name} ]]${includeOutputInChat ? ("\n\n<think>\n" + output + "\n</think>") : ""}`,
-            "rawContent": `[[ Output of ${name} ]]${includeOutputInChat ? ("\n\n<think>\n" + output + "\n</think>") : ""}`,
+            "content": displayContent,
+            "rawContent": displayContent,
             "functionName": name,
             "functionResponse": output,
             "thinking": false,
             "done": true,
-            // "visibleToUser": false,
         });
     }
 
