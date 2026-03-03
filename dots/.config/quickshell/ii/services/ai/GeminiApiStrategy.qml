@@ -128,8 +128,8 @@ ApiStrategy {
             }
             
             // Function call handling
-            if (dataJson.candidates[0]?.content?.parts[0]?.functionCall) {
-                const functionCall = dataJson.candidates[0]?.content?.parts[0]?.functionCall;
+            if (dataJson.candidates[0]?.content?.parts?.[0]?.functionCall) {
+                const functionCall = dataJson.candidates[0].content.parts[0].functionCall;
                 message.functionName = functionCall.name;
                 message.functionCall = functionCall.name;
                 const newContent = `\n\n[[ Function: ${functionCall.name}(${JSON.stringify(functionCall.args, null, 2)}) ]]\n`
@@ -139,9 +139,11 @@ ApiStrategy {
             }
 
             // Normal text response
-            const responseContent = dataJson.candidates[0]?.content?.parts[0]?.text
-            message.rawContent += responseContent;
-            message.content += responseContent;
+            const responseContent = dataJson.candidates[0]?.content?.parts?.[0]?.text ?? ""
+            if (responseContent.length > 0) {
+                message.rawContent += responseContent;
+                message.content += responseContent;
+            }
             
             // Handle annotations and metadata
             const annotationSources = dataJson.candidates[0]?.groundingMetadata?.groundingChunks?.map(chunk => {

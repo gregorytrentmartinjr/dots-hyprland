@@ -19,8 +19,9 @@ ApiStrategy {
         const userMessage = lastUserMsg?.rawContent ?? "";
 
         let script = "unset CLAUDECODE\n";
-        // Pass the API key from the environment (set by Ai.qml on the Process)
-        script += "export ANTHROPIC_API_KEY=\"$API_KEY\"\n";
+        // Pass the API key from the environment (set by Ai.qml on the Process) only if non-empty,
+        // so we don't override existing CLI auth (e.g. from `claude login`)
+        script += "[ -n \"$API_KEY\" ] && export ANTHROPIC_API_KEY=\"$API_KEY\"\n";
         // Add common Node.js/npm paths so claude can be found
         script += "export PATH=\"$HOME/.local/bin:$HOME/.nvm/versions/node/current/bin:/usr/local/bin:/opt/node22/bin:$PATH\"\n";
         script += "claude";
