@@ -26,6 +26,7 @@ ApiStrategy {
                     "parts": [{
                         functionCall: {
                             "name": message.functionName,
+                            "args": message.functionCall?.args ?? {},
                         }
                     }]
                 }
@@ -127,22 +128,26 @@ ApiStrategy {
                 finished = true;
             }
             
-            // Function call handling
-            if (dataJson.candidates[0]?.content?.parts?.[0]?.functionCall) {
-                const functionCall = dataJson.candidates[0].content.parts[0].functionCall;
-                message.functionName = functionCall.name;
-                message.functionCall = functionCall.name;
-                const newContent = `\n\n[[ Function: ${functionCall.name}(${JSON.stringify(functionCall.args, null, 2)}) ]]\n`
-                message.rawContent += newContent;
-                message.content += newContent;
-                return { functionCall: { name: functionCall.name, args: functionCall.args }, finished: finished };
-            }
+            // Iterate through all parts (thinking models may have thinking in earlier parts)
+            const parts = dataJson.candidates[0]?.content?.parts ?? [];
+            for (const part of parts) {
+                // Function call handling
+                if (part.functionCall) {
+                    const functionCall = part.functionCall;
+                    message.functionName = functionCall.name;
+                    message.functionCall = functionCall.name;
+                    const newContent = `\n\n[[ Function: ${functionCall.name}(${JSON.stringify(functionCall.args, null, 2)}) ]]\n`
+                    message.rawContent += newContent;
+                    message.content += newContent;
+                    return { functionCall: { name: functionCall.name, args: functionCall.args }, finished: finished };
+                }
 
-            // Normal text response
-            const responseContent = dataJson.candidates[0]?.content?.parts?.[0]?.text ?? ""
-            if (responseContent.length > 0) {
-                message.rawContent += responseContent;
-                message.content += responseContent;
+                // Normal text response
+                const responseContent = part.text ?? "";
+                if (responseContent.length > 0) {
+                    message.rawContent += responseContent;
+                    message.content += responseContent;
+                }
             }
             
             // Handle annotations and metadata
