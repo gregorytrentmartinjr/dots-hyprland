@@ -147,7 +147,7 @@ ContentPage {
     ContentSection {
         icon: "lock"
         title: Translation.tr("Lock screen")
-
+        /*
         ConfigSwitch {
             buttonIcon: "water_drop"
             text: Translation.tr('Use Hyprlock (instead of Quickshell)')
@@ -159,7 +159,7 @@ ContentPage {
                 text: Translation.tr("If you want to somehow use fingerprint unlock...")
             }
         }
-
+        */
         ConfigSwitch {
             buttonIcon: "account_circle"
             text: Translation.tr('Launch on startup')
@@ -199,7 +199,7 @@ ContentPage {
 
         ContentSubsection {
             title: Translation.tr("Style: general")
-
+            /*
             ConfigSwitch {
                 buttonIcon: "center_focus_weak"
                 text: Translation.tr('Center clock')
@@ -217,7 +217,7 @@ ContentPage {
                     Config.options.lock.showLockedText = checked;
                 }
             }
-
+            */
             ConfigSwitch {
                 buttonIcon: "shapes"
                 text: Translation.tr('Use varying shapes for password characters')
@@ -238,7 +238,7 @@ ContentPage {
                     Config.options.lock.blur.enable = checked;
                 }
             }
-
+            /*
             ConfigSpinBox {
                 icon: "loupe"
                 text: Translation.tr("Extra wallpaper zoom (%)")
@@ -250,9 +250,10 @@ ContentPage {
                     Config.options.lock.blur.extraZoom = value / 100;
                 }
             }
+            */
         }
     }
-
+    /*
     ContentSection {
         icon: "notifications"
         title: Translation.tr("Notifications")
@@ -292,7 +293,6 @@ ContentPage {
         }
     }
 
-    /*
     ContentSection {
         icon: "point_scan"
         title: Translation.tr("Overlay: Crosshair")
