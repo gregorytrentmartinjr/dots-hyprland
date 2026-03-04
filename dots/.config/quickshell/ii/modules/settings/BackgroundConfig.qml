@@ -6,7 +6,7 @@ import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
-
+    /*
     ContentSection {
         icon: "sync_alt"
         title: Translation.tr("Parallax")
@@ -51,6 +51,7 @@ ContentPage {
             }
         }
     }
+    */
 
     ContentSection {
         id: settingsClock

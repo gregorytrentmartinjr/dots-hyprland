@@ -7,6 +7,7 @@ import qs.modules.common.widgets
 ContentPage {
     forceWidth: true
 
+    /*
     ContentSection {
         icon: "keyboard"
         title: Translation.tr("Cheat sheet")
@@ -99,6 +100,8 @@ ContentPage {
             }
         }
     }
+    */
+
     ContentSection {
         icon: "call_to_action"
         title: Translation.tr("Dock")
@@ -165,7 +168,7 @@ ContentPage {
                 Config.options.lock.launchOnStartup = checked;
             }
         }
-
+        
         ContentSubsection {
             title: Translation.tr("Security")
 
@@ -289,6 +292,7 @@ ContentPage {
         }
     }
 
+    /*
     ContentSection {
         icon: "point_scan"
         title: Translation.tr("Overlay: Crosshair")
@@ -436,11 +440,11 @@ ContentPage {
             }
         }
     }
-
+    */
     ContentSection {
         icon: "side_navigation"
         title: Translation.tr("Sidebars")
-
+        /*
         ConfigSwitch {
             buttonIcon: "memory"
             text: Translation.tr('Keep right sidebar loaded')
@@ -461,7 +465,7 @@ ContentPage {
                 Config.options.sidebar.translator.enable = checked;
             }
         }
-
+        */
         ContentSubsection {
             title: Translation.tr("Quick toggles")
             
@@ -541,7 +545,7 @@ ContentPage {
                 }
             }
         }
-
+        /*
         ContentSubsection {
             title: Translation.tr("Corner open")
             tooltip: Translation.tr("Allows you to open sidebars by clicking or hovering screen corners regardless of bar position")
@@ -664,8 +668,9 @@ ContentPage {
                 }
             }
         }
+        */
     }
-
+    /*
     ContentSection {
         icon: "voting_chip"
         title: Translation.tr("On-screen display")
@@ -793,7 +798,7 @@ ContentPage {
             }
         }
     }
-
+    */
     ContentSection {
         icon: "text_format"
         title: Translation.tr("Fonts")

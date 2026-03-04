@@ -6,7 +6,7 @@ import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
-
+    /*
     ContentSection {
         icon: "neurology"
         title: Translation.tr("AI")
@@ -23,6 +23,7 @@ ContentPage {
             }
         }
     }
+    */
 
     ContentSection {
         icon: "music_cast"
@@ -66,7 +67,7 @@ ContentPage {
             }
         }
     }
-
+    /*
     ContentSection {
         icon: "memory"
         title: Translation.tr("Resources")
@@ -82,8 +83,8 @@ ContentPage {
                 Config.options.resources.updateInterval = value;
             }
         }
-        
     }
+    */
 
     ContentSection {
         icon: "file_open"
@@ -113,7 +114,7 @@ ContentPage {
     ContentSection {
         icon: "search"
         title: Translation.tr("Search")
-
+        /*
         ConfigSwitch {
             text: Translation.tr("Use Levenshtein distance-based algorithm instead of fuzzy")
             checked: Config.options.search.sloppy
@@ -124,6 +125,7 @@ ContentPage {
                 text: Translation.tr("Could be better if you make a ton of typos,\nbut results can be weird and might not work with acronyms\n(e.g. \"GIMP\" might not give you the paint program)")
             }
         }
+        */
 
         ContentSubsection {
             title: Translation.tr("Prefixes")

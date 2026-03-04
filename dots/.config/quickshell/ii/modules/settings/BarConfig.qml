@@ -6,7 +6,7 @@ import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
-
+    /*
     ContentSection {
         icon: "notifications"
         title: Translation.tr("Notifications")
@@ -19,6 +19,7 @@ ContentPage {
             }
         }
     }
+    */
     
     ContentSection {
         icon: "spoke"
@@ -265,7 +266,7 @@ ContentPage {
     }
 
     ContentSection {
-          icon: "workspaces"
+        icon: "workspaces"
         title: Translation.tr("Workspaces")
 
         ConfigSwitch {
@@ -318,7 +319,7 @@ ContentPage {
                 Config.options.bar.workspaces.showNumberDelay = value;
             }
         }
-
+        /*
         ContentSubsection {
             title: Translation.tr("Number style")
 
@@ -346,6 +347,7 @@ ContentPage {
                 ]
             }
         }
+        */
     }
     
     ContentSection {
@@ -403,6 +405,7 @@ ContentPage {
         }
     }
 
+    /*
     ContentSection {
         icon: "tooltip"
         title: Translation.tr("Tooltips")
@@ -415,4 +418,5 @@ ContentPage {
             }
         }
     }
+    */
 }

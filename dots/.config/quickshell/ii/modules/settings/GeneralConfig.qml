@@ -227,7 +227,34 @@ ContentPage {
                     ]
                 }
             }
-
+            // Wallpaper Policy  
+            ColumnLayout {  
+                ContentSubsectionLabel {  
+                    text: Translation.tr("Wallpaper Browser")  
+                }  
+    
+                ConfigSelectionArray {  
+                    currentValue: Config.options.policies.wallpaperBrowser  
+                    onSelected: newValue => {  
+                        Config.options.policies.wallpaperBrowser = newValue;  
+                    }  
+                    options: [  
+                        {  
+                            displayName: Translation.tr("No"),  
+                            icon: "close",  
+                            value: 0  
+                        },  
+                        {  
+                            displayName: Translation.tr("Yes"),  
+                            icon: "check",  
+                            value: 1  
+                        },  
+                    ]  
+                }  
+            }
+        }
+        /*
+        ConfigRow {
             // Weeb policy
             ColumnLayout {
 
@@ -260,33 +287,7 @@ ContentPage {
                 }
             }
         }
-        ConfigRow {  
-            // Wallpaper Policy  
-            ColumnLayout {  
-                ContentSubsectionLabel {  
-                    text: Translation.tr("Wallpaper Browser")  
-                }  
-    
-                ConfigSelectionArray {  
-                    currentValue: Config.options.policies.wallpaperBrowser  
-                    onSelected: newValue => {  
-                        Config.options.policies.wallpaperBrowser = newValue;  
-                    }  
-                    options: [  
-                        {  
-                            displayName: Translation.tr("No"),  
-                            icon: "close",  
-                            value: 0  
-                        },  
-                        {  
-                            displayName: Translation.tr("Yes"),  
-                            icon: "check",  
-                            value: 1  
-                        },  
-                    ]  
-                }  
-            }
-        }
+        */
     }
 
     ContentSection {
@@ -316,7 +317,7 @@ ContentPage {
     ContentSection {
         icon: "nest_clock_farsight_analog"
         title: Translation.tr("Time")
-
+        /*
         ConfigSwitch {
             buttonIcon: "pace"
             text: Translation.tr("Second precision")
@@ -328,7 +329,7 @@ ContentPage {
                 text: Translation.tr("Enable if you want clocks to show seconds accurately")
             }
         }
-
+        */
         ContentSubsection {
             title: Translation.tr("Format")
             tooltip: ""
@@ -388,7 +389,7 @@ ContentPage {
             }
         }
     }
-
+    /*
     ContentSection {
         icon: "work_alert"
         title: Translation.tr("Work safety")
@@ -410,4 +411,5 @@ ContentPage {
             }
         }
     }
+    */
 }
