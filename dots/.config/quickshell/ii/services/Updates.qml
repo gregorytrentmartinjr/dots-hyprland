@@ -22,7 +22,7 @@ Singleton {
     function load() {}
     function refresh() {
         if (!available) return;
-// print("[Updates] Checking for system updates")
+        print("[Updates] Checking for system updates")
         checkUpdatesProc.running = true;
     }
 
@@ -31,7 +31,7 @@ Singleton {
         repeat: true
         running: Config.ready && Config.options.updates.enableCheck
         onTriggered: {
-// print("[Updates] Periodic update check due")
+            print("[Updates] Periodic update check due")
             root.refresh();
         }
     }
@@ -41,7 +41,6 @@ Singleton {
         running: Config.ready && Config.options.updates.enableCheck
         command: ["which", "checkupdates"]
         onExited: (exitCode, exitStatus) => {
-// print("[Updates] Availability check exited with code:", exitCode);
             root.available = (exitCode === 0);
             root.refresh();
         }
@@ -49,22 +48,10 @@ Singleton {
 
     Process {
         id: checkUpdatesProc
-        command: {
-            let cmd = "checkupdates";
-            if (Config.options.updates.packageManager === "yay") {
-                cmd = "(checkupdates; yay -Qua)";
-            } else if (Config.options.updates.packageManager === "paru") {
-                cmd = "(checkupdates; paru -Qua)";
-            }
-// print("[Updates] Running command:", cmd);
-            return ["bash", "-c", cmd + " | wc -l"];
-        }
+        command: ["bash", "-c", "checkupdates | wc -l"]
         stdout: StdioCollector {
             onStreamFinished: {
-                let txt = text.trim();
-// print("[Updates] Command output:", txt);
-                root.count = parseInt(txt);
-// print("[Updates] Parsed count:", root.count);
+                root.count = parseInt(text.trim());
             }
         }
     }
