@@ -135,7 +135,6 @@ ApiStrategy {
                 if (part.functionCall) {
                     const functionCall = part.functionCall;
                     message.functionName = functionCall.name;
-                    message.functionCall = functionCall.name;
                     return { functionCall: { name: functionCall.name, args: functionCall.args }, finished: finished };
                 }
 

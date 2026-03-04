@@ -841,6 +841,8 @@ Singleton {
             const key = args.key;
             const value = args.value;
             Config.setNestedValue(key, value);
+            addFunctionOutputMessage(name, Translation.tr("Set `%1` to `%2`").arg(key).arg(value));
+            requester.makeRequest();
         } else if (name === "run_shell_command") {
             if (!args.command || args.command.length === 0) {
                 addFunctionOutputMessage(name, Translation.tr("Invalid arguments. Must provide `command`."));
