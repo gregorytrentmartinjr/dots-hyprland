@@ -315,6 +315,19 @@ ContentPage {
     }
 
     ContentSection {
+        icon: "cloud"
+        title: Translation.tr("Weather")
+        ConfigSwitch {
+            buttonIcon: "check"
+            text: Translation.tr("Enable")
+            checked: Config.options.bar.weather.enable
+            onCheckedChanged: {
+                Config.options.bar.weather.enable = checked;
+            }
+        }
+    }
+
+    ContentSection {
         icon: "shelf_auto_hide"
         title: Translation.tr("Tray")
 
@@ -333,19 +346,6 @@ ContentPage {
             checked: Config.options.tray.monochromeIcons
             onCheckedChanged: {
                 Config.options.tray.monochromeIcons = checked;
-            }
-        }
-    }
-
-    ContentSection {
-        icon: "cloud"
-        title: Translation.tr("Weather")
-        ConfigSwitch {
-            buttonIcon: "check"
-            text: Translation.tr("Enable")
-            checked: Config.options.bar.weather.enable
-            onCheckedChanged: {
-                Config.options.bar.weather.enable = checked;
             }
         }
     }
