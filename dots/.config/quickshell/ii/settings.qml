@@ -183,67 +183,73 @@ ApplicationWindow {
                 }
                 NavigationRail { // Window content with navigation rail and content pane
                     id: navRail
-                    anchors {
-                        left: parent.left
-                        top: parent.top
-                        bottom: parent.bottom
-                    }
-                    spacing: 10
-                    expanded: root.width > 900
-                    
-                    NavigationRailExpandButton {
-                        focus: root.visible
-                    }
 
-                    FloatingActionButton {
-                        id: fab
-                        property bool justCopied: false
-                        iconText: justCopied ? "check" : "edit"
-                        buttonText: justCopied ? Translation.tr("Path copied") : Translation.tr("Config file")
-                        expanded: navRail.expanded
-                        downAction: () => {
-                            Qt.openUrlExternally(`${Directories.config}/illogical-impulse/config.json`);
-                        }
-                        altAction: () => {
-                            Quickshell.clipboardText = CF.FileUtils.trimFileProtocol(`${Directories.config}/illogical-impulse/config.json`);
-                            fab.justCopied = true;
-                            revertTextTimer.restart()
-                        }
-
-                        Timer {
-                            id: revertTextTimer
-                            interval: 1500
-                            onTriggered: {
-                                fab.justCopied = false;
-                            }
-                        }
-
-                        StyledToolTip {
-                            text: Translation.tr("Open the shell config file\nAlternatively right-click to copy path")
+                    // Group 1: Quick, General (Indices 0, 1)
+                    Repeater {
+                        model: root.pages.slice(0, 2)
+                        NavigationRailButton {
+                            required property var index
+                            required property var modelData
+                            toggled: root.currentPage === index
+                            onPressed: root.currentPage = index
+                            expanded: navRail.expanded
+                            buttonIcon: modelData.icon
+                            buttonText: modelData.name
                         }
                     }
 
-                    NavigationRailTabArray {
-                        currentIndex: root.currentPage
-                        expanded: navRail.expanded
-                        Repeater {
-                            model: root.pages
-                            NavigationRailButton {
-                                required property var index
-                                required property var modelData
-                                toggled: root.currentPage === index
-                                onPressed: root.currentPage = index;
-                                expanded: navRail.expanded
-                                buttonIcon: modelData.icon
-                                buttonIconRotation: modelData.iconRotation || 0
-                                buttonText: modelData.name
-                                showToggledHighlight: false
-                            }
+                    // Separator 1
+                    Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
+                                color: Appearance.m3colors.m3outlineVariant }
+
+                    // Group 2: Bar, Background, Interface (Indices 2, 3, 4)
+                    Repeater {
+                        model: root.pages.slice(2, 5)
+                        NavigationRailButton {
+                            required property var index
+                            required property var modelData
+                            toggled: root.currentPage === (index + 2) 
+                            onPressed: root.currentPage = (index + 2)
+                            expanded: navRail.expanded
+                            buttonIcon: modelData.icon
+                            buttonText: modelData.name
                         }
                     }
 
-                    Item {
-                        Layout.fillHeight: true
+                    // Separator 2
+                    Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
+                                color: Appearance.m3colors.m3outlineVariant }
+
+                    // Group 3: Display, Connectivity (Indices 5, 6)
+                    Repeater {
+                        model: root.pages.slice(5, 7)
+                        NavigationRailButton {
+                            required property var index
+                            required property var modelData
+                            toggled: root.currentPage === (index + 5)
+                            onPressed: root.currentPage = (index + 5)
+                            expanded: navRail.expanded
+                            buttonIcon: modelData.icon
+                            buttonText: modelData.name
+                        }
+                    }
+
+                    // Separator 3
+                    Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
+                                color: Appearance.m3colors.m3outlineVariant }
+
+                    // Group 4: Services, Advanced, About (Indices 7, 8, 9)
+                    Repeater {
+                        model: root.pages.slice(7)
+                        NavigationRailButton {
+                            required property var index
+                            required property var modelData
+                            toggled: root.currentPage === (index + 7) // Correct
+                            onPressed: root.currentPage = (index + 7)
+                            expanded: navRail.expanded
+                            buttonIcon: modelData.icon
+                            buttonText: modelData.name
+                        }
                     }
                 }
             }
