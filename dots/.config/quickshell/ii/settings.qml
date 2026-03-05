@@ -55,9 +55,14 @@ ApplicationWindow {
             component: "modules/settings/DisplayConfig.qml"
         },
         {
-            name: Translation.tr("Connectivity"),
-            icon: "settings_ethernet",
-            component: "modules/settings/ConnectivityConfig.qml"
+            name: Translation.tr("Wi-Fi"),
+            icon: "wifi",
+            component: "modules/settings/WifiConfig.qml"
+        },
+        {
+            name: Translation.tr("Bluetooth"),
+            icon: "bluetooth",
+            component: "modules/settings/BluetoothConfig.qml"
         },
         {
             name: Translation.tr("Services"),
@@ -220,9 +225,9 @@ ApplicationWindow {
                     Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
                                 color: Appearance.m3colors.m3outlineVariant }
 
-                    // Group 3: Display, Connectivity (Indices 5, 6)
+                    // Group 3: Display, Wi-Fi, Bluetooth (Indices 5, 6, 7)
                     Repeater {
-                        model: root.pages.slice(5, 7)
+                        model: root.pages.slice(5, 8)
                         NavigationRailButton {
                             required property var index
                             required property var modelData
@@ -238,14 +243,14 @@ ApplicationWindow {
                     Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
                                 color: Appearance.m3colors.m3outlineVariant }
 
-                    // Group 4: Services, Advanced, About (Indices 7, 8, 9)
+                    // Group 4: Services, Advanced, About (Indices 8, 9, 10)
                     Repeater {
-                        model: root.pages.slice(7)
+                        model: root.pages.slice(8)
                         NavigationRailButton {
                             required property var index
                             required property var modelData
-                            toggled: root.currentPage === (index + 7) // Correct
-                            onPressed: root.currentPage = (index + 7)
+                            toggled: root.currentPage === (index + 8) // Correct
+                            onPressed: root.currentPage = (index + 8)
                             expanded: navRail.expanded
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
