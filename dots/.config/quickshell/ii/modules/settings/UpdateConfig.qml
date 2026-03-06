@@ -20,7 +20,6 @@ ContentPage {
     property bool flagDisableFlatpak: false
     property bool flagDisableFirmware: false
     property string customArgs: ""
-    property string excludePackages: ""
 
     function buildCommand() {
         let args = ["topgrade", "--cleanup"];
@@ -28,13 +27,6 @@ ContentPage {
         if (flagDisableSystem) { args.push("--disable"); args.push("system"); }
         if (flagDisableFlatpak) { args.push("--disable"); args.push("flatpak"); }
         if (flagDisableFirmware) { args.push("--disable"); args.push("firmware"); }
-        if (excludePackages.trim().length > 0) {
-            const pkgs = excludePackages.split(",").map(p => p.trim()).filter(p => p.length > 0);
-            for (const pkg of pkgs) {
-                args.push("--exclude");
-                args.push(pkg);
-            }
-        }
         if (customArgs.trim().length > 0) {
             const extra = customArgs.trim().split(/\s+/);
             for (const a of extra) args.push(a);
@@ -113,47 +105,6 @@ ContentPage {
                 text: Translation.tr("Disable firmware updates")
                 checked: root.flagDisableFirmware
                 onCheckedChanged: root.flagDisableFirmware = checked
-            }
-        }
-
-        ContentSubsection {
-            title: Translation.tr("Exclude packages")
-
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: excludeField.implicitHeight + 16
-                radius: Appearance.rounding.small
-                color: Appearance.colors.colLayer1
-                border.color: Appearance.m3colors.m3outlineVariant
-                border.width: 1
-
-                TextInput {
-                    id: excludeField
-                    anchors {
-                        fill: parent
-                        margins: 8
-                    }
-                    text: root.excludePackages
-                    onTextChanged: root.excludePackages = text
-                    color: Appearance.colors.colOnLayer1
-                    font.family: Appearance.font.family.monospace
-                    font.pixelSize: Appearance.font.pixelSize.small
-                    clip: true
-
-                    StyledText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: excludeField.text.length === 0 && !excludeField.activeFocus
-                        text: Translation.tr("e.g. linux, nvidia-dkms, mesa")
-                        color: Appearance.m3colors.m3outlineVariant
-                        font: excludeField.font
-                    }
-                }
-            }
-
-            StyledText {
-                text: Translation.tr("Comma-separated list of packages to skip during update")
-                font.pixelSize: Appearance.font.pixelSize.smaller
-                color: Appearance.m3colors.m3outlineVariant
             }
         }
 
