@@ -1,7 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.services
 import qs.modules.common
+import qs.modules.common.functions
 import qs.modules.common.widgets
 
 ContentPage {
@@ -21,6 +23,50 @@ ContentPage {
     }
     */
     
+    // ── Time & Date ───────────────────────────────────────────────────────────
+    ContentSection {
+        icon: "nest_clock_farsight_analog"
+        title: Translation.tr("Time & Date")
+
+        ConfigRow {
+            ContentSubsection {
+                title: Translation.tr("Time Format")
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.time.format
+                    onSelected: newValue => {
+                        if (newValue === "hh:mm") {
+                            Quickshell.execDetached(["bash", "-c", `sed -i 's/\\TIME12\\b/TIME/' '${FileUtils.trimFileProtocol(Directories.config)}/hypr/hyprlock.conf'`]);
+                        } else {
+                            Quickshell.execDetached(["bash", "-c", `sed -i 's/\\TIME\\b/TIME12/' '${FileUtils.trimFileProtocol(Directories.config)}/hypr/hyprlock.conf'`]);
+                        }
+                        Config.options.time.format = newValue;
+                    }
+                    options: [
+                        { displayName: Translation.tr("24h"),       value: "hh:mm"   },
+                        { displayName: Translation.tr("12h am/pm"), value: "h:mm ap" },
+                        { displayName: Translation.tr("12h AM/PM"), value: "h:mm AP" },
+                    ]
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Date Format")
+
+                ConfigSelectionArray {
+                    currentValue: Config.options.time.dateFormat
+                    onSelected: newValue => {
+                        Config.options.time.dateFormat = newValue;
+                    }
+                    options: [
+                        { displayName: Translation.tr("Date First dd/MM"),  value: "ddd dd/MM" },
+                        { displayName: Translation.tr("Month First MM/dd"), value: "ddd MM/dd" },
+                    ]
+                }
+            }
+        }
+    }
+
     ContentSection {
         icon: "spoke"
         title: Translation.tr("Positioning")

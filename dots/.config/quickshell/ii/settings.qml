@@ -29,32 +29,6 @@ ApplicationWindow {
             component: "modules/settings/QuickConfig.qml"
         },
         {
-            name: Translation.tr("General"),
-            icon: "browse",
-            component: "modules/settings/GeneralConfig.qml"
-        },
-        {
-            name: Translation.tr("Bar"),
-            icon: "toast",
-            iconRotation: 180,
-            component: "modules/settings/BarConfig.qml"
-        },
-        {
-            name: Translation.tr("Background"),
-            icon: "texture",
-            component: "modules/settings/BackgroundConfig.qml"
-        },
-        {
-            name: Translation.tr("Interface"),
-            icon: "bottom_app_bar",
-            component: "modules/settings/InterfaceConfig.qml"
-        },
-        {
-            name: Translation.tr("Display"),
-            icon: "monitor",
-            component: "modules/settings/DisplayConfig.qml"
-        },
-        {
             name: Translation.tr("Wi-Fi"),
             icon: "wifi",
             component: "modules/settings/WifiConfig.qml"
@@ -65,14 +39,50 @@ ApplicationWindow {
             component: "modules/settings/BluetoothConfig.qml"
         },
         {
+            name: Translation.tr("Bar"),
+            icon: "toast",
+            iconRotation: 180,
+            component: "modules/settings/BarConfig.qml"
+        },
+        {
+            name: Translation.tr("Interface"),
+            icon: "bottom_app_bar",
+            component: "modules/settings/InterfaceConfig.qml"
+        },
+        {
+            name: Translation.tr("Background"),
+            icon: "texture",
+            component: "modules/settings/BackgroundConfig.qml"
+        },
+        {
+            name: Translation.tr("Display"),
+            icon: "monitor",
+            component: "modules/settings/DisplayConfig.qml"
+        },
+        {
+            name: Translation.tr("Mouse"),
+            icon: "mouse",
+            component: "modules/settings/MouseConfig.qml"
+        },
+        {
+            name: Translation.tr("Power"),
+            icon: "bolt",
+            component: "modules/settings/PowerConfig.qml"
+        },
+        {
+            name: Translation.tr("Accounts"),
+            icon: "manage_accounts",
+            component: "modules/settings/AccountsConfig.qml"
+        },
+        {
             name: Translation.tr("Services"),
             icon: "settings",
             component: "modules/settings/ServicesConfig.qml"
         },
         {
-            name: Translation.tr("Advanced"),
-            icon: "construction",
-            component: "modules/settings/AdvancedConfig.qml"
+            name: Translation.tr("Update"),
+            icon: "system_update_alt",
+            component: "modules/settings/UpdateConfig.qml"
         },
         {
             name: Translation.tr("About"),
@@ -186,12 +196,23 @@ ApplicationWindow {
                 Behavior on implicitWidth {
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
                 }
+                Flickable {
+                    id: navRailFlickable
+                    anchors.fill: parent
+                    clip: true
+                    contentWidth: width
+                    contentHeight: navRail.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
+                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOff }
+
                 NavigationRail { // Window content with navigation rail and content pane
                     id: navRail
+                    width: navRailFlickable.width
+                    spacing: 0
 
-                    // Group 1: Quick, General (Indices 0, 1)
+                    // Group 1: Quick, Wi-Fi, Bluetooth (Indices 0, 1, 2)
                     Repeater {
-                        model: root.pages.slice(0, 2)
+                        model: root.pages.slice(0, 3)
                         NavigationRailButton {
                             required property var index
                             required property var modelData
@@ -207,14 +228,14 @@ ApplicationWindow {
                     Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
                                 color: Appearance.m3colors.m3outlineVariant }
 
-                    // Group 2: Bar, Background, Interface (Indices 2, 3, 4)
+                    // Group 2: Bar, Background, Interface (Indices 3, 4, 5)
                     Repeater {
-                        model: root.pages.slice(2, 5)
+                        model: root.pages.slice(3, 6)
                         NavigationRailButton {
                             required property var index
                             required property var modelData
-                            toggled: root.currentPage === (index + 2) 
-                            onPressed: root.currentPage = (index + 2)
+                            toggled: root.currentPage === (index + 3)
+                            onPressed: root.currentPage = (index + 3)
                             expanded: navRail.expanded
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
@@ -225,14 +246,14 @@ ApplicationWindow {
                     Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
                                 color: Appearance.m3colors.m3outlineVariant }
 
-                    // Group 3: Display, Wi-Fi, Bluetooth (Indices 5, 6, 7)
+                    // Group 3: Display, Power, Mouse (Indices 6, 7, 8)
                     Repeater {
-                        model: root.pages.slice(5, 8)
+                        model: root.pages.slice(6, 9)
                         NavigationRailButton {
                             required property var index
                             required property var modelData
-                            toggled: root.currentPage === (index + 5)
-                            onPressed: root.currentPage = (index + 5)
+                            toggled: root.currentPage === (index + 6)
+                            onPressed: root.currentPage = (index + 6)
                             expanded: navRail.expanded
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
@@ -243,20 +264,39 @@ ApplicationWindow {
                     Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
                                 color: Appearance.m3colors.m3outlineVariant }
 
-                    // Group 4: Services, Advanced, About (Indices 8, 9, 10)
+                    // Group 4: Services, Update, Accounts (Indices 9, 10, 11)
                     Repeater {
-                        model: root.pages.slice(8)
+                        model: root.pages.slice(9, 12)
                         NavigationRailButton {
                             required property var index
                             required property var modelData
-                            toggled: root.currentPage === (index + 8) // Correct
-                            onPressed: root.currentPage = (index + 8)
+                            toggled: root.currentPage === (index + 9)
+                            onPressed: root.currentPage = (index + 9)
                             expanded: navRail.expanded
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
                     }
-                }
+
+                    // Separator 4
+                    Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
+                                color: Appearance.m3colors.m3outlineVariant }
+
+                    // Group 5: About (Index 12)
+                    Repeater {
+                        model: root.pages.slice(12)
+                        NavigationRailButton {
+                            required property var index
+                            required property var modelData
+                            toggled: root.currentPage === (index + 12)
+                            onPressed: root.currentPage = (index + 12)
+                            expanded: navRail.expanded
+                            buttonIcon: modelData.icon
+                            buttonText: modelData.name
+                        }
+                    }
+                } // NavigationRail
+                } // Flickable
             }
             Rectangle { // Content container
                 Layout.fillWidth: true

@@ -1,11 +1,61 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 import qs.services
 import qs.modules.common
+import qs.modules.common.functions as CF
 import qs.modules.common.widgets
 
 ContentPage {
     forceWidth: true
+
+    // ── Lock timeout ─────────────────────────────────────────────────────────
+    property bool lockEnabled: true
+    property int lockSecs: 300
+    property bool _lockReaderFinished: false
+
+    readonly property string hyprIdleConf: `${CF.FileUtils.trimFileProtocol(Directories.config)}/hypr/hypridle.conf`
+
+    Component.onCompleted: {
+        lockTimeoutReader.running = true
+    }
+
+    Process {
+        id: lockTimeoutReader
+        command: ["awk",
+            "/timeout[[:space:]]*=/{for(i=1;i<=NF;i++)if($i~/^[0-9]+$/){t=$i;break}} /on-timeout.*lock-session/{print t; exit}",
+            hyprIdleConf
+        ]
+        property string buf: ""
+        onRunningChanged: if (running) buf = ""
+        stdout: SplitParser { onRead: data => lockTimeoutReader.buf += data }
+        onExited: (code) => {
+            const v = parseInt(lockTimeoutReader.buf.trim())
+            if (!isNaN(v)) {
+                if (v === 0 || v >= 599940) {
+                    lockEnabled = false
+                } else {
+                    lockEnabled = true
+                    lockSecs = v
+                }
+            }
+            _lockReaderFinished = true
+        }
+    }
+
+    function applyLockTimeout(enabled, secs) {
+        const timeout = enabled ? secs : 599940
+        const awkProg = [
+            "BEGIN{il=0; m=0}",
+            "/^listener/ && /\\{/{il=1; m=0; block=$0; next}",
+            "il{block=block\"\\n\"$0; if($0 ~ /on-timeout.*lock-session/){m=1}; if($0 ~ /\\}/){if(m){sub(/timeout[ \\t]*=[ \\t]*[0-9]+/,\"timeout = " + timeout + "\",block)}; print block; il=0; next}}",
+            "il==0{print}",
+        ].join("; ")
+        Quickshell.execDetached(["bash", "-c",
+            "awk '" + awkProg + "' '" + hyprIdleConf + "' > '" + hyprIdleConf + ".tmp' && mv '" + hyprIdleConf + ".tmp' '" + hyprIdleConf + "' && pkill -x hypridle; hypridle &"
+        ])
+    }
 
     /*
     ContentSection {
@@ -144,115 +194,6 @@ ContentPage {
         }
     }
 
-    ContentSection {
-        icon: "lock"
-        title: Translation.tr("Lock screen")
-        /*
-        ConfigSwitch {
-            buttonIcon: "water_drop"
-            text: Translation.tr('Use Hyprlock (instead of Quickshell)')
-            checked: Config.options.lock.useHyprlock
-            onCheckedChanged: {
-                Config.options.lock.useHyprlock = checked;
-            }
-            StyledToolTip {
-                text: Translation.tr("If you want to somehow use fingerprint unlock...")
-            }
-        }
-        */
-        ConfigSwitch {
-            buttonIcon: "account_circle"
-            text: Translation.tr('Launch on startup')
-            checked: Config.options.lock.launchOnStartup
-            onCheckedChanged: {
-                Config.options.lock.launchOnStartup = checked;
-            }
-        }
-        
-        ContentSubsection {
-            title: Translation.tr("Security")
-
-            ConfigSwitch {
-                buttonIcon: "settings_power"
-                text: Translation.tr('Require password to power off/restart')
-                checked: Config.options.lock.security.requirePasswordToPower
-                onCheckedChanged: {
-                    Config.options.lock.security.requirePasswordToPower = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("Remember that on most devices one can always hold the power button to force shutdown\nThis only makes it a tiny bit harder for accidents to happen")
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "key_vertical"
-                text: Translation.tr('Also unlock keyring')
-                checked: Config.options.lock.security.unlockKeyring
-                onCheckedChanged: {
-                    Config.options.lock.security.unlockKeyring = checked;
-                }
-                StyledToolTip {
-                    text: Translation.tr("This is usually safe and needed for your browser and AI sidebar anyway\nMostly useful for those who use lock on startup instead of a display manager that does it (GDM, SDDM, etc.)")
-                }
-            }
-        }
-
-        ContentSubsection {
-            title: Translation.tr("Style: general")
-            /*
-            ConfigSwitch {
-                buttonIcon: "center_focus_weak"
-                text: Translation.tr('Center clock')
-                checked: Config.options.lock.centerClock
-                onCheckedChanged: {
-                    Config.options.lock.centerClock = checked;
-                }
-            }
-
-            ConfigSwitch {
-                buttonIcon: "info"
-                text: Translation.tr('Show "Locked" text')
-                checked: Config.options.lock.showLockedText
-                onCheckedChanged: {
-                    Config.options.lock.showLockedText = checked;
-                }
-            }
-            */
-            ConfigSwitch {
-                buttonIcon: "shapes"
-                text: Translation.tr('Use varying shapes for password characters')
-                checked: Config.options.lock.materialShapeChars
-                onCheckedChanged: {
-                    Config.options.lock.materialShapeChars = checked;
-                }
-            }
-        }
-        ContentSubsection {
-            title: Translation.tr("Style: Blurred")
-
-            ConfigSwitch {
-                buttonIcon: "blur_on"
-                text: Translation.tr('Enable blur')
-                checked: Config.options.lock.blur.enable
-                onCheckedChanged: {
-                    Config.options.lock.blur.enable = checked;
-                }
-            }
-            /*
-            ConfigSpinBox {
-                icon: "loupe"
-                text: Translation.tr("Extra wallpaper zoom (%)")
-                value: Config.options.lock.blur.extraZoom * 100
-                from: 1
-                to: 150
-                stepSize: 2
-                onValueChanged: {
-                    Config.options.lock.blur.extraZoom = value / 100;
-                }
-            }
-            */
-        }
-    }
     /*
     ContentSection {
         icon: "notifications"
@@ -441,9 +382,66 @@ ContentPage {
         }
     }
     */
+    // ── Left Sidebar ──────────────────────────────────────────────────────────
     ContentSection {
         icon: "side_navigation"
-        title: Translation.tr("Sidebars")
+        mirrorIcon: true
+        title: Translation.tr("Left Sidebar")
+
+        ConfigRow {
+            ColumnLayout {
+                ContentSubsectionLabel {
+                    text: Translation.tr("AI")
+                }
+                ConfigSelectionArray {
+                    currentValue: Config.options.policies.ai
+                    onSelected: newValue => {
+                        Config.options.policies.ai = newValue;
+                    }
+                    options: [
+                        { displayName: Translation.tr("No"),         icon: "close",              value: 0 },
+                        { displayName: Translation.tr("Yes"),        icon: "check",              value: 1 },
+                        { displayName: Translation.tr("Local only"), icon: "sync_saved_locally", value: 2 }
+                    ]
+                }
+            }
+            ColumnLayout {
+                ContentSubsectionLabel {
+                    text: Translation.tr("Wallpaper Browser")
+                }
+                ConfigSelectionArray {
+                    currentValue: Config.options.policies.wallpaperBrowser
+                    onSelected: newValue => {
+                        Config.options.policies.wallpaperBrowser = newValue;
+                    }
+                    options: [
+                        { displayName: Translation.tr("No"),  icon: "close", value: 0 },
+                        { displayName: Translation.tr("Yes"), icon: "check", value: 1 }
+                    ]
+                }
+            }
+            ColumnLayout {
+                ContentSubsectionLabel {
+                    text: Translation.tr("Translator")
+                }
+                ConfigSelectionArray {
+                    currentValue: Config.options.sidebar.translator.enable ? 1 : 0
+                    onSelected: newValue => {
+                        Config.options.sidebar.translator.enable = (newValue === 1);
+                    }
+                    options: [
+                        { displayName: Translation.tr("No"),  icon: "close", value: 0 },
+                        { displayName: Translation.tr("Yes"), icon: "check", value: 1 }
+                    ]
+                }
+            }
+        }
+    }
+
+    // ── Right Sidebar ─────────────────────────────────────────────────────────
+    ContentSection {
+        icon: "side_navigation"
+        title: Translation.tr("Right Sidebar")
         /*
         ConfigSwitch {
             buttonIcon: "memory"
@@ -669,7 +667,172 @@ ContentPage {
             }
         }
         */
+
+        ContentSubsection {
+            title: Translation.tr("Alarms")
+
+            ConfigSwitch {
+                buttonIcon: "av_timer"
+                text: Translation.tr("Pomodoro")
+                checked: Config.options.sounds.pomodoro
+                onCheckedChanged: {
+                    Config.options.sounds.pomodoro = checked;
+                }
+            }
+        }
     }
+
+    // ── Lock screen ───────────────────────────────────────────────────────────
+    ContentSection {
+        icon: "lock"
+        title: Translation.tr("Lock screen")
+        /*
+        ConfigSwitch {
+            buttonIcon: "water_drop"
+            text: Translation.tr('Use Hyprlock (instead of Quickshell)')
+            checked: Config.options.lock.useHyprlock
+            onCheckedChanged: {
+                Config.options.lock.useHyprlock = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("If you want to somehow use fingerprint unlock...")
+            }
+        }
+        */
+        ConfigSwitch {
+            Layout.fillWidth: true
+            buttonIcon: "timer"
+            text: Translation.tr("Automatic Lock")
+            checked: lockEnabled
+            onCheckedChanged: {
+                lockEnabled = checked
+                if (_lockReaderFinished) applyLockTimeout(checked, lockSecs)
+            }
+        }
+        ConfigRow {
+            enabled: lockEnabled
+            StyledText {
+                text: Translation.tr("Delay")
+                font.pixelSize: Appearance.font.pixelSize.normal
+                color: lockEnabled ? Appearance.colors.colOnLayer1 : Appearance.colors.colSubtext
+                Layout.fillWidth: true
+            }
+            StyledComboBox {
+                enabled: lockEnabled
+                textRole: "displayName"
+                model: [
+                    { displayName: Translation.tr("1 minute"),   seconds: 60   },
+                    { displayName: Translation.tr("2 minutes"),  seconds: 120  },
+                    { displayName: Translation.tr("5 minutes"),  seconds: 300  },
+                    { displayName: Translation.tr("10 minutes"), seconds: 600  },
+                    { displayName: Translation.tr("15 minutes"), seconds: 900  },
+                    { displayName: Translation.tr("30 minutes"), seconds: 1800 }
+                ]
+                currentIndex: {
+                    const idx = model.findIndex(item => item.seconds === lockSecs)
+                    return idx !== -1 ? idx : 2
+                }
+                onActivated: index => {
+                    lockSecs = model[index].seconds
+                    applyLockTimeout(lockEnabled, model[index].seconds)
+                }
+            }
+        }
+
+        ConfigSwitch {
+            buttonIcon: "account_circle"
+            text: Translation.tr('Launch on startup')
+            checked: Config.options.lock.launchOnStartup
+            onCheckedChanged: {
+                Config.options.lock.launchOnStartup = checked;
+            }
+        }
+
+        ContentSubsection {
+            title: Translation.tr("Security")
+
+            ConfigSwitch {
+                buttonIcon: "settings_power"
+                text: Translation.tr('Require password to power off/restart')
+                checked: Config.options.lock.security.requirePasswordToPower
+                onCheckedChanged: {
+                    Config.options.lock.security.requirePasswordToPower = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Remember that on most devices one can always hold the power button to force shutdown\nThis only makes it a tiny bit harder for accidents to happen")
+                }
+            }
+
+            ConfigSwitch {
+                buttonIcon: "key_vertical"
+                text: Translation.tr('Also unlock keyring')
+                checked: Config.options.lock.security.unlockKeyring
+                onCheckedChanged: {
+                    Config.options.lock.security.unlockKeyring = checked;
+                }
+                StyledToolTip {
+                    text: Translation.tr("This is usually safe and needed for your browser and AI sidebar anyway\nMostly useful for those who use lock on startup instead of a display manager that does it (GDM, SDDM, etc.)")
+                }
+            }
+        }
+
+        ContentSubsection {
+            title: Translation.tr("Style: general")
+            /*
+            ConfigSwitch {
+                buttonIcon: "center_focus_weak"
+                text: Translation.tr('Center clock')
+                checked: Config.options.lock.centerClock
+                onCheckedChanged: {
+                    Config.options.lock.centerClock = checked;
+                }
+            }
+
+            ConfigSwitch {
+                buttonIcon: "info"
+                text: Translation.tr('Show "Locked" text')
+                checked: Config.options.lock.showLockedText
+                onCheckedChanged: {
+                    Config.options.lock.showLockedText = checked;
+                }
+            }
+            */
+            ConfigSwitch {
+                buttonIcon: "shapes"
+                text: Translation.tr('Use varying shapes for password characters')
+                checked: Config.options.lock.materialShapeChars
+                onCheckedChanged: {
+                    Config.options.lock.materialShapeChars = checked;
+                }
+            }
+        }
+        ContentSubsection {
+            title: Translation.tr("Style: Blurred")
+
+            ConfigSwitch {
+                buttonIcon: "blur_on"
+                text: Translation.tr('Enable blur')
+                checked: Config.options.lock.blur.enable
+                onCheckedChanged: {
+                    Config.options.lock.blur.enable = checked;
+                }
+            }
+            /*
+            ConfigSpinBox {
+                icon: "loupe"
+                text: Translation.tr("Extra wallpaper zoom (%)")
+                value: Config.options.lock.blur.extraZoom * 100
+                from: 1
+                to: 150
+                stepSize: 2
+                onValueChanged: {
+                    Config.options.lock.blur.extraZoom = value / 100;
+                }
+            }
+            */
+        }
+    }
+
     /*
     ContentSection {
         icon: "voting_chip"
