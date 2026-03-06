@@ -1,0 +1,296 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
+import qs.services
+import qs.modules.common
+import qs.modules.common.widgets
+
+ContentPage {
+    id: root
+    forceWidth: true
+
+    property string outputText: ""
+    property bool isRunning: false
+
+    // Topgrade flags
+    property bool flagNoRetry: false
+    property bool flagCleanup: false
+    property bool flagYes: false
+    property bool flagDisableSystem: false
+    property bool flagDisableFlatpak: false
+    property bool flagDisableFirmware: false
+    property bool flagDryRun: false
+    property string customArgs: ""
+
+    function buildCommand() {
+        let args = ["topgrade"];
+        if (flagNoRetry) args.push("--no-retry");
+        if (flagCleanup) args.push("--cleanup");
+        if (flagYes) args.push("--yes");
+        if (flagDisableSystem) args.push("--disable").push("system");
+        if (flagDisableFlatpak) args.push("--disable").push("flatpak");
+        if (flagDisableFirmware) args.push("--disable").push("firmware");
+        if (flagDryRun) args.push("--dry-run");
+        if (customArgs.trim().length > 0) {
+            const extra = customArgs.trim().split(/\s+/);
+            for (const a of extra) args.push(a);
+        }
+        return args;
+    }
+
+    function startUpdate() {
+        if (isRunning) return;
+        outputText = "";
+        topgradeProc.command = buildCommand();
+        topgradeProc.running = true;
+        isRunning = true;
+    }
+
+    function stopUpdate() {
+        if (!isRunning) return;
+        topgradeProc.signal(15); // SIGTERM
+    }
+
+    Process {
+        id: topgradeProc
+        stdout: SplitParser {
+            onRead: data => {
+                root.outputText += data + "\n";
+            }
+        }
+        stderr: SplitParser {
+            onRead: data => {
+                root.outputText += data + "\n";
+            }
+        }
+        onExited: (exitCode, exitStatus) => {
+            root.isRunning = false;
+            if (exitCode === 0) {
+                root.outputText += "\n" + Translation.tr("Update completed successfully.");
+            } else {
+                root.outputText += "\n" + Translation.tr("Update finished with exit code %1.").arg(exitCode);
+            }
+        }
+    }
+
+    ContentSection {
+        icon: "system_update_alt"
+        title: Translation.tr("System Update")
+
+        ContentSubsection {
+            title: Translation.tr("Topgrade flags")
+
+            ConfigSwitch {
+                buttonIcon: "block"
+                text: Translation.tr("No retry (--no-retry)")
+                checked: root.flagNoRetry
+                onCheckedChanged: root.flagNoRetry = checked
+                StyledToolTip {
+                    text: Translation.tr("Do not retry failed steps")
+                }
+            }
+            ConfigSwitch {
+                buttonIcon: "mop"
+                text: Translation.tr("Cleanup (--cleanup)")
+                checked: root.flagCleanup
+                onCheckedChanged: root.flagCleanup = checked
+                StyledToolTip {
+                    text: Translation.tr("Remove unused packages after update")
+                }
+            }
+            ConfigSwitch {
+                buttonIcon: "check_circle"
+                text: Translation.tr("Auto-confirm (--yes)")
+                checked: root.flagYes
+                onCheckedChanged: root.flagYes = checked
+                StyledToolTip {
+                    text: Translation.tr("Automatically say yes to prompts")
+                }
+            }
+            ConfigSwitch {
+                buttonIcon: "desktop_windows"
+                text: Translation.tr("Disable system packages")
+                checked: root.flagDisableSystem
+                onCheckedChanged: root.flagDisableSystem = checked
+                StyledToolTip {
+                    text: Translation.tr("Skip system package manager (pacman, apt, etc.)")
+                }
+            }
+            ConfigSwitch {
+                buttonIcon: "deployed_code"
+                text: Translation.tr("Disable Flatpak")
+                checked: root.flagDisableFlatpak
+                onCheckedChanged: root.flagDisableFlatpak = checked
+            }
+            ConfigSwitch {
+                buttonIcon: "memory"
+                text: Translation.tr("Disable firmware updates")
+                checked: root.flagDisableFirmware
+                onCheckedChanged: root.flagDisableFirmware = checked
+            }
+            ConfigSwitch {
+                buttonIcon: "science"
+                text: Translation.tr("Dry run (--dry-run)")
+                checked: root.flagDryRun
+                onCheckedChanged: root.flagDryRun = checked
+                StyledToolTip {
+                    text: Translation.tr("Print what would be done without actually doing it")
+                }
+            }
+        }
+
+        ContentSubsection {
+            title: Translation.tr("Additional arguments")
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: customArgsField.implicitHeight + 16
+                radius: Appearance.rounding.small
+                color: Appearance.colors.colLayer1
+                border.color: Appearance.m3colors.m3outlineVariant
+                border.width: 1
+
+                TextInput {
+                    id: customArgsField
+                    anchors {
+                        fill: parent
+                        margins: 8
+                    }
+                    text: root.customArgs
+                    onTextChanged: root.customArgs = text
+                    color: Appearance.colors.colOnLayer1
+                    font.family: Appearance.font.family.monospace
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    clip: true
+
+                    StyledText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: customArgsField.text.length === 0 && !customArgsField.activeFocus
+                        text: Translation.tr("e.g. --only system flatpak")
+                        color: Appearance.m3colors.m3outlineVariant
+                        font: customArgsField.font
+                    }
+                }
+            }
+        }
+
+        ContentSubsection {
+            title: Translation.tr("Command preview")
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: previewText.implicitHeight + 16
+                radius: Appearance.rounding.small
+                color: Appearance.colors.colLayer1
+
+                StyledText {
+                    id: previewText
+                    anchors {
+                        fill: parent
+                        margins: 8
+                    }
+                    text: root.buildCommand().join(" ")
+                    font.family: Appearance.font.family.monospace
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: Appearance.colors.colOnLayer1
+                    wrapMode: Text.Wrap
+                }
+            }
+        }
+
+        ConfigRow {
+            RippleButtonWithIcon {
+                materialIcon: root.isRunning ? "stop" : "play_arrow"
+                mainText: root.isRunning ? Translation.tr("Stop") : Translation.tr("Start update")
+                onClicked: {
+                    if (root.isRunning) root.stopUpdate();
+                    else root.startUpdate();
+                }
+            }
+            RippleButtonWithIcon {
+                materialIcon: "delete"
+                mainText: Translation.tr("Clear output")
+                enabled: !root.isRunning
+                onClicked: root.outputText = ""
+            }
+        }
+    }
+
+    ContentSection {
+        icon: "terminal"
+        title: Translation.tr("Output")
+
+        headerExtra: [
+            RippleButtonWithIcon {
+                materialIcon: "content_copy"
+                mainText: Translation.tr("Copy")
+                onClicked: {
+                    Quickshell.clipboardText = root.outputText;
+                }
+            }
+        ]
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 400
+            radius: Appearance.rounding.small
+            color: Appearance.colors.colLayer0
+            clip: true
+
+            Flickable {
+                id: outputFlickable
+                anchors {
+                    fill: parent
+                    margins: 10
+                }
+                contentHeight: outputDisplay.implicitHeight
+                clip: true
+                flickableDirection: Flickable.VerticalFlick
+                boundsBehavior: Flickable.StopAtBounds
+
+                StyledText {
+                    id: outputDisplay
+                    width: outputFlickable.width
+                    text: root.outputText || Translation.tr("No output yet. Press \"Start update\" to begin.")
+                    font.family: Appearance.font.family.monospace
+                    font.pixelSize: Appearance.font.pixelSize.small
+                    color: root.outputText ? Appearance.colors.colOnLayer0 : Appearance.m3colors.m3outlineVariant
+                    wrapMode: Text.Wrap
+                    textFormat: Text.PlainText
+                }
+
+                onContentHeightChanged: {
+                    if (root.isRunning) {
+                        contentY = Math.max(0, contentHeight - height);
+                    }
+                }
+
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AsNeeded
+                }
+            }
+
+            // Running indicator
+            Rectangle {
+                visible: root.isRunning
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+                height: 3
+                color: Appearance.m3colors.m3primary
+                radius: 2
+
+                SequentialAnimation on opacity {
+                    running: root.isRunning
+                    loops: Animation.Infinite
+                    NumberAnimation { from: 0.3; to: 1.0; duration: 800 }
+                    NumberAnimation { from: 1.0; to: 0.3; duration: 800 }
+                }
+            }
+        }
+    }
+}

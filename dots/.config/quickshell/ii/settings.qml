@@ -65,6 +65,11 @@ ApplicationWindow {
             component: "modules/settings/BluetoothConfig.qml"
         },
         {
+            name: Translation.tr("Update"),
+            icon: "system_update_alt",
+            component: "modules/settings/UpdateConfig.qml"
+        },
+        {
             name: Translation.tr("Services"),
             icon: "settings",
             component: "modules/settings/ServicesConfig.qml"
@@ -243,7 +248,7 @@ ApplicationWindow {
                     Rectangle { Layout.fillWidth: true; height: 1; opacity: 0.3; Layout.margins: 12
                                 color: Appearance.m3colors.m3outlineVariant }
 
-                    // Group 4: Services, Advanced, About (Indices 8, 9, 10)
+                    // Group 4: Update, Services, Advanced, About (Indices 8, 9, 10, 11)
                     Repeater {
                         model: root.pages.slice(8)
                         NavigationRailButton {
