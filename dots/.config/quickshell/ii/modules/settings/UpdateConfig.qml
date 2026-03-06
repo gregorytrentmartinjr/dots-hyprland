@@ -15,7 +15,7 @@ ContentPage {
     property bool isRunning: false
 
     // Topgrade flags
-    property bool flagYes: false
+    property bool flagYes: true
     property bool flagDisableSystem: false
     property bool flagDisableFlatpak: false
     property bool flagDisableFirmware: false
