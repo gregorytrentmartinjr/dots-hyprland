@@ -76,35 +76,41 @@ ContentPage {
         ContentSubsection {
             title: Translation.tr("Topgrade flags")
 
-            ConfigSwitch {
-                buttonIcon: "check_circle"
-                text: Translation.tr("Auto-confirm (--yes)")
-                checked: root.flagYes
-                onCheckedChanged: root.flagYes = checked
-                StyledToolTip {
-                    text: Translation.tr("Automatically say yes to prompts")
+            ConfigRow {
+                uniform: true
+                ConfigSwitch {
+                    buttonIcon: "check_circle"
+                    text: Translation.tr("Auto-confirm (--yes)")
+                    checked: root.flagYes
+                    onCheckedChanged: root.flagYes = checked
+                    StyledToolTip {
+                        text: Translation.tr("Automatically say yes to prompts")
+                    }
+                }
+                ConfigSwitch {
+                    buttonIcon: "desktop_windows"
+                    text: Translation.tr("Disable system packages")
+                    checked: root.flagDisableSystem
+                    onCheckedChanged: root.flagDisableSystem = checked
+                    StyledToolTip {
+                        text: Translation.tr("Skip system package manager (pacman, apt, etc.)")
+                    }
                 }
             }
-            ConfigSwitch {
-                buttonIcon: "desktop_windows"
-                text: Translation.tr("Disable system packages")
-                checked: root.flagDisableSystem
-                onCheckedChanged: root.flagDisableSystem = checked
-                StyledToolTip {
-                    text: Translation.tr("Skip system package manager (pacman, apt, etc.)")
+            ConfigRow {
+                uniform: true
+                ConfigSwitch {
+                    buttonIcon: "deployed_code"
+                    text: Translation.tr("Disable Flatpak")
+                    checked: root.flagDisableFlatpak
+                    onCheckedChanged: root.flagDisableFlatpak = checked
                 }
-            }
-            ConfigSwitch {
-                buttonIcon: "deployed_code"
-                text: Translation.tr("Disable Flatpak")
-                checked: root.flagDisableFlatpak
-                onCheckedChanged: root.flagDisableFlatpak = checked
-            }
-            ConfigSwitch {
-                buttonIcon: "memory"
-                text: Translation.tr("Disable firmware updates")
-                checked: root.flagDisableFirmware
-                onCheckedChanged: root.flagDisableFirmware = checked
+                ConfigSwitch {
+                    buttonIcon: "memory"
+                    text: Translation.tr("Disable firmware updates")
+                    checked: root.flagDisableFirmware
+                    onCheckedChanged: root.flagDisableFirmware = checked
+                }
             }
         }
 
