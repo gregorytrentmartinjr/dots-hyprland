@@ -15,25 +15,19 @@ ContentPage {
     property bool isRunning: false
 
     // Topgrade flags
-    property bool flagNoRetry: false
-    property bool flagCleanup: false
     property bool flagYes: false
     property bool flagDisableSystem: false
     property bool flagDisableFlatpak: false
     property bool flagDisableFirmware: false
-    property bool flagDryRun: false
     property string customArgs: ""
     property string excludePackages: ""
 
     function buildCommand() {
-        let args = ["topgrade"];
-        if (flagNoRetry) args.push("--no-retry");
-        if (flagCleanup) args.push("--cleanup");
+        let args = ["topgrade", "--cleanup"];
         if (flagYes) args.push("--yes");
         if (flagDisableSystem) { args.push("--disable"); args.push("system"); }
         if (flagDisableFlatpak) { args.push("--disable"); args.push("flatpak"); }
         if (flagDisableFirmware) { args.push("--disable"); args.push("firmware"); }
-        if (flagDryRun) args.push("--dry-run");
         if (excludePackages.trim().length > 0) {
             const pkgs = excludePackages.split(",").map(p => p.trim()).filter(p => p.length > 0);
             for (const pkg of pkgs) {
@@ -91,24 +85,6 @@ ContentPage {
             title: Translation.tr("Topgrade flags")
 
             ConfigSwitch {
-                buttonIcon: "block"
-                text: Translation.tr("No retry (--no-retry)")
-                checked: root.flagNoRetry
-                onCheckedChanged: root.flagNoRetry = checked
-                StyledToolTip {
-                    text: Translation.tr("Do not retry failed steps")
-                }
-            }
-            ConfigSwitch {
-                buttonIcon: "mop"
-                text: Translation.tr("Cleanup (--cleanup)")
-                checked: root.flagCleanup
-                onCheckedChanged: root.flagCleanup = checked
-                StyledToolTip {
-                    text: Translation.tr("Remove unused packages after update")
-                }
-            }
-            ConfigSwitch {
                 buttonIcon: "check_circle"
                 text: Translation.tr("Auto-confirm (--yes)")
                 checked: root.flagYes
@@ -137,15 +113,6 @@ ContentPage {
                 text: Translation.tr("Disable firmware updates")
                 checked: root.flagDisableFirmware
                 onCheckedChanged: root.flagDisableFirmware = checked
-            }
-            ConfigSwitch {
-                buttonIcon: "science"
-                text: Translation.tr("Dry run (--dry-run)")
-                checked: root.flagDryRun
-                onCheckedChanged: root.flagDryRun = checked
-                StyledToolTip {
-                    text: Translation.tr("Print what would be done without actually doing it")
-                }
             }
         }
 
