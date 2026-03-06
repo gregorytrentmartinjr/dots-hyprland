@@ -28,4 +28,6 @@ depends=(
   snapper-gui
   krita
   fastfetch
+  topgrade
+  ksshaskpass
 )

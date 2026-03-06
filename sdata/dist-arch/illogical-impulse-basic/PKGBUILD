@@ -22,6 +22,9 @@ depends=(
   clinfo
   power-profiles-daemon
   topgrade
+  pkexec
+  cpio
+  ksshaskpass
   # Used in install script
   rsync
   go-yq # https://github.com/mikefarah/yq
