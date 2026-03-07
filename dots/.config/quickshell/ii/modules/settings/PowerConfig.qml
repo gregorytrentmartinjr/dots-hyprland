@@ -24,6 +24,7 @@ ContentPage {
         powerProfileReader.running = true
         logindReader.running = true
         screenBlankReader.running = true
+        autoSuspendReader.running = true
     }
 
     // ── Readers ──────────────────────────────────────────────────────────────
@@ -43,29 +44,18 @@ ContentPage {
         }
     }
 
-    // Read HandlePowerKey, IdleAction, and IdleActionSec from logind drop-ins
-    // in a single awk pass instead of three separate bash pipelines.
+    // Read HandlePowerKey from logind drop-in
     Process {
         id: logindReader
         command: ["bash", "-c",
-            "awk -F= '/HandlePowerKey/{gsub(/[[:space:]]/,\"\",$2); print \"powerkey=\"$2} /^IdleAction=/{gsub(/[[:space:]]/,\"\",$2); print \"idleaction=\"$2} /IdleActionSec/{gsub(/[[:space:]]/,\"\",$2); print \"idleactionsec=\"$2}' /etc/systemd/logind.conf.d/10-power-key.conf /etc/systemd/logind.conf.d/10-idle-action.conf 2>/dev/null; true"
+            "awk -F= '/HandlePowerKey/{gsub(/[[:space:]]/,\"\",$2); print $2}' /etc/systemd/logind.conf.d/10-power-key.conf 2>/dev/null; true"
         ]
         property string buf: ""
         onRunningChanged: if (running) buf = ""
-        stdout: SplitParser { onRead: data => logindReader.buf += data + "\n" }
+        stdout: SplitParser { onRead: data => logindReader.buf += data }
         onExited: (code) => {
-            const lines = logindReader.buf.trim().split("\n")
-            for (const line of lines) {
-                if (line.startsWith("powerkey=")) {
-                    const v = line.substring(9)
-                    if (v.length > 0) powerButtonAction = v
-                } else if (line.startsWith("idleaction=")) {
-                    if (line.substring(11) === "ignore") autoSuspendEnabled = false
-                } else if (line.startsWith("idleactionsec=")) {
-                    const v = parseInt(line.substring(14))
-                    if (!isNaN(v) && v > 0) autoSuspendSecs = v
-                }
-            }
+            const v = logindReader.buf.trim()
+            if (v.length > 0) powerButtonAction = v
         }
     }
 
@@ -73,7 +63,7 @@ ContentPage {
     Process {
         id: screenBlankReader
         command: ["awk",
-            "/timeout[[:space:]]*=/{t=$NF} /on-timeout.*dpms off/{print t; exit}",
+            "/timeout[[:space:]]*=/{for(i=1;i<=NF;i++)if($i~/^[0-9]+$/){t=$i;break}} /on-timeout.*dpms off/{print t; exit}",
             hyprIdleConf
         ]
         property string buf: ""
@@ -87,6 +77,29 @@ ContentPage {
                 } else {
                     screenBlankEnabled = true
                     screenBlankSecs = v
+                }
+            }
+        }
+    }
+
+    // Read suspend timeout from hypridle.conf (targets the listener containing suspend)
+    Process {
+        id: autoSuspendReader
+        command: ["awk",
+            "/timeout[[:space:]]*=/{for(i=1;i<=NF;i++)if($i~/^[0-9]+$/){t=$i;break}} /on-timeout.*suspend/{print t; exit}",
+            hyprIdleConf
+        ]
+        property string buf: ""
+        onRunningChanged: if (running) buf = ""
+        stdout: SplitParser { onRead: data => autoSuspendReader.buf += data }
+        onExited: (code) => {
+            const v = parseInt(autoSuspendReader.buf.trim())
+            if (!isNaN(v)) {
+                if (v === 0) {
+                    autoSuspendEnabled = false
+                } else {
+                    autoSuspendEnabled = true
+                    autoSuspendSecs = v
                 }
             }
         }
@@ -114,12 +127,11 @@ ContentPage {
         ])
     }
 
-    // Write IdleAction + IdleActionSec to logind drop-in and reload
+    // Update suspend timeout in hypridle.conf and restart hypridle
     function applyAutoSuspend(enabled, secs) {
-        const action = enabled ? "suspend" : "ignore"
-        const secStr = String(Math.max(0, Math.floor(secs)))
-        Quickshell.execDetached(["pkexec", "bash", "-c",
-            "mkdir -p /etc/systemd/logind.conf.d && printf '[Login]\\nIdleAction=" + action + "\\nIdleActionSec=" + secStr + "\\n' > /etc/systemd/logind.conf.d/10-idle-action.conf && systemctl kill -s HUP systemd-logind"
+        const timeout = enabled ? secs : 0
+        Quickshell.execDetached(["bash", "-c",
+            "perl -i -0777 -pe 's/(timeout\\s*=\\s*)\\d+([^\\n]*\\n[^\\n]*on-timeout[^\\n]*suspend)/${1}" + timeout + "${2}/g' '" + hyprIdleConf + "' && pkill -x hypridle; hypridle &"
         ])
     }
 
