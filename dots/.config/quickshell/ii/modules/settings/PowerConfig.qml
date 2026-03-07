@@ -31,9 +31,12 @@ ContentPage {
     Process {
         id: powerProfileReader
         command: ["powerprofilesctl", "get"]
+        property string buf: ""
+        onRunningChanged: if (running) buf = ""
+        stdout: SplitParser { onRead: data => powerProfileReader.buf += data }
         onExited: (code) => {
             if (code === 0) {
-                const v = stdout.trim()
+                const v = powerProfileReader.buf.trim()
                 if (["performance", "balanced", "power-saver"].includes(v))
                     powerProfile = v
             }
@@ -47,8 +50,11 @@ ContentPage {
         command: ["bash", "-c",
             "awk -F= '/HandlePowerKey/{gsub(/[[:space:]]/,\"\",$2); print \"powerkey=\"$2} /^IdleAction=/{gsub(/[[:space:]]/,\"\",$2); print \"idleaction=\"$2} /IdleActionSec/{gsub(/[[:space:]]/,\"\",$2); print \"idleactionsec=\"$2}' /etc/systemd/logind.conf.d/10-power-key.conf /etc/systemd/logind.conf.d/10-idle-action.conf 2>/dev/null; true"
         ]
+        property string buf: ""
+        onRunningChanged: if (running) buf = ""
+        stdout: SplitParser { onRead: data => logindReader.buf += data + "\n" }
         onExited: (code) => {
-            const lines = stdout.trim().split("\n")
+            const lines = logindReader.buf.trim().split("\n")
             for (const line of lines) {
                 if (line.startsWith("powerkey=")) {
                     const v = line.substring(9)
@@ -70,8 +76,11 @@ ContentPage {
             "/timeout[[:space:]]*=/{t=$NF} /on-timeout.*dpms off/{print t; exit}",
             hyprIdleConf
         ]
+        property string buf: ""
+        onRunningChanged: if (running) buf = ""
+        stdout: SplitParser { onRead: data => screenBlankReader.buf += data }
         onExited: (code) => {
-            const v = parseInt(stdout.trim())
+            const v = parseInt(screenBlankReader.buf.trim())
             if (!isNaN(v)) {
                 if (v === 0) {
                     screenBlankEnabled = false
