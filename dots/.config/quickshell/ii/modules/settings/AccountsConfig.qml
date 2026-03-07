@@ -107,7 +107,7 @@ ContentPage {
         property bool showChangePassword: false
         property bool showChangeName: false
         property bool showRemove: false
-        property bool working: actionProc.running
+        property bool working: actionProc.running || imageApplyProc.running
 
         Layout.fillWidth: true
         implicitHeight: itemColumn.implicitHeight + 24
@@ -148,6 +148,47 @@ ContentPage {
             }
         }
 
+        Process {
+            id: imagePickerProc
+            command: ["kdialog", "--getopenfilename", ".", "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)"]
+            property string buf: ""
+            onRunningChanged: if (running) buf = ""
+            stdout: SplitParser { onRead: data => imagePickerProc.buf += data }
+            onExited: (code) => {
+                if (code !== 0 || imagePickerProc.buf.trim().length === 0) return
+                const src = imagePickerProc.buf.trim()
+                const user = account.name
+                const dest = "/var/lib/AccountsService/icons/" + user
+                const conf = "/var/lib/AccountsService/users/" + user
+                imageApplyProc.command = ["pkexec", "bash", "-c",
+                    'mkdir -p /var/lib/AccountsService/icons /var/lib/AccountsService/users'
+                    + ' && cp "$1" "$2" && chmod 644 "$2"'
+                    + ' && if [ -f "$3" ] && grep -q "^Icon=" "$3"; then'
+                    + '   sed -i "s|^Icon=.*|Icon=$2|" "$3";'
+                    + ' elif [ -f "$3" ]; then'
+                    + '   sed -i "/^\\[User\\]/a Icon=$2" "$3";'
+                    + ' else'
+                    + '   printf \'[User]\\nIcon=%s\\n\' "$2" > "$3";'
+                    + ' fi',
+                    "--", src, dest, conf
+                ]
+                imageApplyProc.running = true
+            }
+        }
+
+        Process {
+            id: imageApplyProc
+            onExited: (code) => {
+                if (code === 0) {
+                    root.showStatus(Translation.tr("Login image updated!"), false)
+                    faceImage.source = ""
+                    faceImage.source = "file:///var/lib/AccountsService/icons/" + account.name
+                } else {
+                    root.showStatus(Translation.tr("Could not update the login image."), true)
+                }
+            }
+        }
+
         ColumnLayout {
             id: itemColumn
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
@@ -162,12 +203,22 @@ ContentPage {
                     implicitWidth: 38; implicitHeight: 38
                     radius: 19
                     color: account.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colLayer3
+                    clip: true
                     StyledText {
                         anchors.centerIn: parent
+                        visible: faceImage.status !== Image.Ready
                         text: (account.name.charAt(0) ?? "?").toUpperCase()
                         font.pixelSize: 16
                         font.weight: Font.Medium
                         color: account.isCurrent ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer2
+                    }
+                    Image {
+                        id: faceImage
+                        anchors.fill: parent
+                        source: "file:///var/lib/AccountsService/icons/" + account.name
+                        fillMode: Image.PreserveAspectCrop
+                        visible: status === Image.Ready
+                        cache: false
                     }
                 }
 
@@ -294,6 +345,30 @@ ContentPage {
                                 text: Translation.tr("Change Login Name")
                                 font.pixelSize: Appearance.font.pixelSize.small
                                 color: item.showChangeName ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer2
+                            }
+                        }
+                    }
+
+                    RippleButton {
+                        implicitWidth: changeImageContent.implicitWidth + 28
+                        implicitHeight: 34
+                        buttonRadius: Appearance.rounding.full
+                        enabled: !item.working && !imagePickerProc.running
+                        colBackground: Appearance.colors.colLayer2
+                        colBackgroundHover: Appearance.colors.colLayer2Hover
+                        onClicked: imagePickerProc.running = true
+                        contentItem: RowLayout {
+                            id: changeImageContent
+                            anchors.centerIn: parent; spacing: 5
+                            MaterialSymbol {
+                                text: "account_circle"
+                                iconSize: 14
+                                color: Appearance.colors.colOnLayer2
+                            }
+                            StyledText {
+                                text: Translation.tr("Change Login Image")
+                                font.pixelSize: Appearance.font.pixelSize.small
+                                color: Appearance.colors.colOnLayer2
                             }
                         }
                     }
