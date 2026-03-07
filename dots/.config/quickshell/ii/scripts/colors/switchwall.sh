@@ -50,6 +50,40 @@ pre_process() {
     fi
 }
 
+set_sddm_background() {
+    local wallpaper_path="$1"
+    [[ -z "$wallpaper_path" || ! -f "$wallpaper_path" ]] && return
+
+    # For video wallpapers, use the thumbnail instead
+    if is_video "$wallpaper_path"; then
+        local thumb="$THUMBNAIL_DIR/$(basename "$wallpaper_path").jpg"
+        [[ -f "$thumb" ]] && wallpaper_path="$thumb" || return
+    fi
+
+    local username
+    username="$(whoami)"
+    local sddm_theme_dir="/usr/share/sddm/themes/pixie-sddm"
+    local sddm_bg_dir="$sddm_theme_dir/assets/backgrounds"
+    local dest="$sddm_bg_dir/${username}.jpg"
+
+    [[ ! -d "$sddm_theme_dir" ]] && return
+
+    # Convert to jpg (or copy if already jpg) using a temp file, then move into place
+    local tmpfile
+    tmpfile="$(mktemp /tmp/sddm-bg-XXXXXX.jpg)"
+    if command -v magick &>/dev/null; then
+        magick "$wallpaper_path" -quality 90 "$tmpfile" 2>/dev/null || return
+    elif command -v convert &>/dev/null; then
+        convert "$wallpaper_path" -quality 90 "$tmpfile" 2>/dev/null || return
+    else
+        cp "$wallpaper_path" "$tmpfile" 2>/dev/null || return
+    fi
+
+    # Copy to SDDM theme dir (requires root)
+    pkexec bash -c "mkdir -p '$sddm_bg_dir' && cp '$tmpfile' '$dest' && chmod 644 '$dest'" 2>/dev/null
+    rm -f "$tmpfile"
+}
+
 post_process() {
     local screen_width="$1"
     local screen_height="$2"
@@ -57,6 +91,7 @@ post_process() {
 
     handle_kde_material_you_colors &
     "$SCRIPT_DIR/code/material-code-set-color.sh" &
+    set_sddm_background "$wallpaper_path" &
 }
 
 CUSTOM_DIR="$XDG_CONFIG_HOME/hypr/custom"
