@@ -62,7 +62,7 @@ set_sddm_background() {
 
     local username
     username="$(whoami)"
-    local sddm_theme_dir="/usr/share/sddm/themes/pixie-sddm"
+    local sddm_theme_dir="/usr/share/sddm/themes/pixie"
     local sddm_bg_dir="$sddm_theme_dir/assets/backgrounds"
     local dest="$sddm_bg_dir/${username}.jpg"
 
@@ -80,7 +80,7 @@ set_sddm_background() {
     fi
 
     # Copy to SDDM theme dir (no root needed if dir is user-writable)
-    # Run: sudo chown $USER /usr/share/sddm/themes/pixie-sddm/assets/backgrounds
+    # Run: sudo chown $USER /usr/share/sddm/themes/pixie/assets/backgrounds
     # once to enable passwordless SDDM background updates
     if cp "$tmpfile" "$dest" 2>/dev/null; then
         chmod 644 "$dest" 2>/dev/null
