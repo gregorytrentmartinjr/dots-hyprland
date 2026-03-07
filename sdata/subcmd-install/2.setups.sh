@@ -20,6 +20,15 @@ function setup_user_group(){
   fi
 }
 
+function setup_sddm_bg_polkit(){
+  # Install polkit policy and rule so wallpaper changes can update SDDM background without a password
+  local helper_src="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ii/scripts/colors/sddm-bg-helper.sh"
+  x sudo cp "$helper_src" /usr/local/bin/sddm-bg-helper
+  x sudo chmod 755 /usr/local/bin/sddm-bg-helper
+  x sudo cp "${REPO_ROOT}/sdata/polkit/org.illogicalimpulse.sddm-bg.policy" /usr/share/polkit-1/actions/
+  x sudo cp "${REPO_ROOT}/sdata/polkit/50-sddm-bg.rules" /usr/share/polkit-1/rules.d/
+}
+
 function setup_kill_fprintd_service(){
   # Fix fingerprint bug when sleeping
   # Fprintd waits 30 seconds after a successful login before quitting, so sleeping during that time period may cause fprintd to break.
@@ -44,6 +53,9 @@ v install-python-packages
 
 showfun setup_user_group
 v setup_user_group
+
+showfun setup_sddm_bg_polkit
+v setup_sddm_bg_polkit
 
 if [[ ! -z $(systemctl --version) ]]; then
   # For Fedora, uinput is required for the virtual keyboard to function, and udev rules enable input group users to utilize it.

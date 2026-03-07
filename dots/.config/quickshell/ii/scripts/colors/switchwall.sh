@@ -80,12 +80,11 @@ set_sddm_background() {
     fi
 
     # Copy to SDDM theme dir
-    # Try direct copy first (works if permissions were set up previously)
+    # Try direct copy first, fall back to pkexec with polkit helper (no password needed)
     if cp "$tmpfile" "$dest" 2>/dev/null; then
         chmod 644 "$dest" 2>/dev/null
-    else
-        # One-time: use pkexec to chown the dir so future copies need no auth
-        pkexec bash -c "mkdir -p '$sddm_bg_dir' && chown '$username' '$sddm_bg_dir' && cp '$tmpfile' '$dest' && chmod 644 '$dest'" 2>/dev/null
+    elif command -v sddm-bg-helper &>/dev/null; then
+        pkexec sddm-bg-helper "$tmpfile" "$dest" 2>/dev/null
     fi
     rm -f "$tmpfile"
 }
