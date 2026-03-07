@@ -613,7 +613,7 @@ ContentPage {
                             contentItem: RowLayout {
                                 anchors.centerIn: parent; spacing: 4
                                 MaterialSymbol { text: "delete_forever"; iconSize: 14; color: Appearance.colors.colOnError }
-                                StyledText { text: Translation.tr("Yes, Remove Account"); color: Appearance.colors.colOnError; font.pixelSize: Appearance.font.pixelSize.small }
+                                StyledText { text: Translation.tr("Yes"); color: Appearance.colors.colOnError; font.pixelSize: Appearance.font.pixelSize.small }
                             }
                         }
                     }
