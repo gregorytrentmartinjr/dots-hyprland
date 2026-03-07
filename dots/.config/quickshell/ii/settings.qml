@@ -70,6 +70,11 @@ ApplicationWindow {
             component: "modules/settings/PowerConfig.qml"
         },
         {
+            name: Translation.tr("Accounts"),
+            icon: "manage_accounts",
+            component: "modules/settings/AccountsConfig.qml"
+        },
+        {
             name: Translation.tr("Services"),
             icon: "settings",
             component: "modules/settings/ServicesConfig.qml"
@@ -78,11 +83,6 @@ ApplicationWindow {
             name: Translation.tr("Update"),
             icon: "system_update_alt",
             component: "modules/settings/UpdateConfig.qml"
-        },
-        {
-            name: Translation.tr("Accounts"),
-            icon: "manage_accounts",
-            component: "modules/settings/AccountsConfig.qml"
         },
         {
             name: Translation.tr("About"),
