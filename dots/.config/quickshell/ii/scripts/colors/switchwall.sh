@@ -79,8 +79,14 @@ set_sddm_background() {
         cp "$wallpaper_path" "$tmpfile" 2>/dev/null || return
     fi
 
-    # Copy to SDDM theme dir (requires root)
-    pkexec bash -c "mkdir -p '$sddm_bg_dir' && cp '$tmpfile' '$dest' && chmod 644 '$dest'" 2>/dev/null
+    # Copy to SDDM theme dir
+    # Try direct copy first (works if permissions were set up previously)
+    if mkdir -p "$sddm_bg_dir" 2>/dev/null && cp "$tmpfile" "$dest" 2>/dev/null; then
+        chmod 644 "$dest" 2>/dev/null
+    else
+        # One-time: set ownership so future copies don't need root
+        pkexec bash -c "mkdir -p '$sddm_bg_dir' && chown '$username' '$sddm_bg_dir' && cp '$tmpfile' '$dest' && chmod 644 '$dest'" 2>/dev/null
+    fi
     rm -f "$tmpfile"
 }
 
