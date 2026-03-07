@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import qs.services
@@ -200,10 +201,18 @@ ContentPage {
                 spacing: 12
 
                 Rectangle {
+                    id: avatarCircle
                     implicitWidth: 38; implicitHeight: 38
                     radius: 19
                     color: account.isCurrent ? Appearance.colors.colPrimary : Appearance.colors.colLayer3
-                    clip: true
+                    layer.enabled: faceImage.status === Image.Ready
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: avatarCircle.width
+                            height: avatarCircle.height
+                            radius: avatarCircle.radius
+                        }
+                    }
                     StyledText {
                         anchors.centerIn: parent
                         visible: faceImage.status !== Image.Ready
@@ -288,7 +297,7 @@ ContentPage {
 
                 Rectangle { Layout.fillWidth: true; height: 1; color: Appearance.colors.colOutlineVariant; opacity: 0.4 }
 
-                // Action buttons row
+                // Action buttons row 1
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
@@ -348,6 +357,12 @@ ContentPage {
                             }
                         }
                     }
+                }
+
+                // Action buttons row 2
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
 
                     RippleButton {
                         implicitWidth: changeImageContent.implicitWidth + 28
