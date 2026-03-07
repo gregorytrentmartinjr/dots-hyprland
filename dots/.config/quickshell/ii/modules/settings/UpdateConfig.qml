@@ -91,6 +91,29 @@ ContentPage {
         icon: "system_update_alt"
         title: Translation.tr("System Update")
 
+        ConfigRow {
+            ConfigSwitch {
+                id: advancedToggle
+                buttonIcon: "tune"
+                text: Translation.tr("Show advanced options")
+                checked: false
+            }
+            RippleButtonWithIcon {
+                materialIcon: root.isRunning ? "stop" : "play_arrow"
+                mainText: root.isRunning ? Translation.tr("Stop") : Translation.tr("Start update")
+                onClicked: {
+                    if (root.isRunning) root.stopUpdate();
+                    else root.startUpdate();
+                }
+            }
+            RippleButtonWithIcon {
+                materialIcon: "delete"
+                mainText: Translation.tr("Clear output")
+                enabled: !root.isRunning
+                onClicked: root.outputText = ""
+            }
+        }
+
         ContentSubsection {
             title: Translation.tr("Advanced")
             visible: advancedToggle.checked
@@ -196,28 +219,6 @@ ContentPage {
             }
         }
 
-        ConfigRow {
-            ConfigSwitch {
-                id: advancedToggle
-                buttonIcon: "tune"
-                text: Translation.tr("Show advanced options")
-                checked: false
-            }
-            RippleButtonWithIcon {
-                materialIcon: root.isRunning ? "stop" : "play_arrow"
-                mainText: root.isRunning ? Translation.tr("Stop") : Translation.tr("Start update")
-                onClicked: {
-                    if (root.isRunning) root.stopUpdate();
-                    else root.startUpdate();
-                }
-            }
-            RippleButtonWithIcon {
-                materialIcon: "delete"
-                mainText: Translation.tr("Clear output")
-                enabled: !root.isRunning
-                onClicked: root.outputText = ""
-            }
-        }
     }
 
     ContentSection {
