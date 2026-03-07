@@ -13,6 +13,7 @@ ContentPage {
 
     property string outputText: ""
     property bool isRunning: false
+    property bool userStopped: false
 
     // Topgrade flags
     property bool flagYes: true
@@ -37,6 +38,7 @@ ContentPage {
     function startUpdate() {
         if (isRunning) return;
         outputText = "";
+        userStopped = false;
         topgradeProc.command = buildCommand();
         topgradeProc.running = true;
         isRunning = true;
@@ -44,6 +46,7 @@ ContentPage {
 
     function stopUpdate() {
         if (!isRunning) return;
+        userStopped = true;
         topgradeProc.signal(15); // SIGTERM
     }
 
@@ -63,8 +66,23 @@ ContentPage {
             root.isRunning = false;
             if (exitCode === 0) {
                 root.outputText += "\n" + Translation.tr("Update completed successfully.");
+            } else if (root.userStopped) {
+                root.outputText += "\n" + Translation.tr("Update stopped by user. Cleaning up…");
+                lockCleanupProc.running = true;
             } else {
                 root.outputText += "\n" + Translation.tr("Update finished with exit code %1.").arg(exitCode);
+            }
+        }
+    }
+
+    Process {
+        id: lockCleanupProc
+        command: ["sudo", "rm", "-f", "/var/lib/pacman/db.lck"]
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) {
+                root.outputText += "\n" + Translation.tr("Pacman lock file removed.");
+            } else {
+                root.outputText += "\n" + Translation.tr("Could not remove pacman lock file. You may need to run: sudo rm /var/lib/pacman/db.lck");
             }
         }
     }
