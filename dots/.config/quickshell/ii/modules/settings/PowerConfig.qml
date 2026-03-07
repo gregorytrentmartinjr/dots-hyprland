@@ -22,10 +22,8 @@ ContentPage {
 
     Component.onCompleted: {
         powerProfileReader.running = true
-        powerButtonReader.running = true
+        logindReader.running = true
         screenBlankReader.running = true
-        autoSuspendActionReader.running = true
-        autoSuspendSecReader.running = true
     }
 
     // ── Readers ──────────────────────────────────────────────────────────────
@@ -42,23 +40,39 @@ ContentPage {
         }
     }
 
-    // Read HandlePowerKey from logind drop-in
+    // Read HandlePowerKey, IdleAction, and IdleActionSec from logind drop-ins
+    // in a single awk pass instead of three separate bash pipelines.
     Process {
-        id: powerButtonReader
+        id: logindReader
         command: ["bash", "-c",
-            "grep -h 'HandlePowerKey' /etc/systemd/logind.conf.d/10-power-key.conf 2>/dev/null | cut -d= -f2 | tr -d '[:space:]'"]
+            "awk -F= '/HandlePowerKey/{gsub(/[[:space:]]/,\"\",$2); print \"powerkey=\"$2} /^IdleAction=/{gsub(/[[:space:]]/,\"\",$2); print \"idleaction=\"$2} /IdleActionSec/{gsub(/[[:space:]]/,\"\",$2); print \"idleactionsec=\"$2}' \"$1\" \"$2\" 2>/dev/null; true",
+            "--",
+            "/etc/systemd/logind.conf.d/10-power-key.conf",
+            "/etc/systemd/logind.conf.d/10-idle-action.conf"
+        ]
         onExited: (code) => {
-            const v = stdout.trim()
-            if (v.length > 0) powerButtonAction = v
+            const lines = stdout.trim().split("\n")
+            for (const line of lines) {
+                if (line.startsWith("powerkey=")) {
+                    const v = line.substring(9)
+                    if (v.length > 0) powerButtonAction = v
+                } else if (line.startsWith("idleaction=")) {
+                    if (line.substring(11) === "ignore") autoSuspendEnabled = false
+                } else if (line.startsWith("idleactionsec=")) {
+                    const v = parseInt(line.substring(14))
+                    if (!isNaN(v) && v > 0) autoSuspendSecs = v
+                }
+            }
         }
     }
 
     // Read DPMS timeout from hypridle.conf (targets the listener containing dpms off)
     Process {
         id: screenBlankReader
-        command: ["perl", "-0777", "-ne",
-            "if (/timeout\\s*=\\s*(\\d+)[^\\n]*\\n[^\\n]*on-timeout[^\\n]*dpms off/) { print $1 }",
-            hyprIdleConf]
+        command: ["awk",
+            "/timeout[[:space:]]*=/{t=$NF} /on-timeout.*dpms off/{print t; exit}",
+            hyprIdleConf
+        ]
         onExited: (code) => {
             const v = parseInt(stdout.trim())
             if (!isNaN(v)) {
@@ -69,27 +83,6 @@ ContentPage {
                     screenBlankSecs = v
                 }
             }
-        }
-    }
-
-    // Read IdleAction (enabled/disabled) from logind drop-in
-    Process {
-        id: autoSuspendActionReader
-        command: ["bash", "-c",
-            "grep -h '^IdleAction=' /etc/systemd/logind.conf.d/10-idle-action.conf 2>/dev/null | cut -d= -f2 | tr -d '[:space:]'"]
-        onExited: (code) => {
-            if (stdout.trim() === "ignore") autoSuspendEnabled = false
-        }
-    }
-
-    // Read IdleActionSec from logind drop-in
-    Process {
-        id: autoSuspendSecReader
-        command: ["bash", "-c",
-            "grep -h 'IdleActionSec' /etc/systemd/logind.conf.d/10-idle-action.conf 2>/dev/null | cut -d= -f2 | tr -d '[:space:]'"]
-        onExited: (code) => {
-            const v = parseInt(stdout.trim())
-            if (!isNaN(v) && v > 0) autoSuspendSecs = v
         }
     }
 
