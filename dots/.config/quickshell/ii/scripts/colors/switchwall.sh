@@ -91,7 +91,7 @@ post_process() {
 
     handle_kde_material_you_colors &
     "$SCRIPT_DIR/code/material-code-set-color.sh" &
-    set_sddm_background "$wallpaper_path" &
+    set_sddm_background "$wallpaper_path"
 }
 
 CUSTOM_DIR="$XDG_CONFIG_HOME/hypr/custom"
