@@ -31,8 +31,9 @@ ContentPage {
 
     Process {
         id: mouseProc
-        command: ["bash", "-c",
-            "awk '/touchpad/{exit} /^[[:space:]]*(sensitivity|left_handed|accel_profile|natural_scroll)[[:space:]]*=/{print}' \"" + root.envConf + "\" 2>/dev/null || true"
+        command: ["awk",
+            "/touchpad/{exit} /^[[:space:]]*(sensitivity|left_handed|accel_profile|natural_scroll)[[:space:]]*=/{print}",
+            root.envConf
         ]
         stdout: SplitParser {
             onRead: data => {
@@ -51,7 +52,8 @@ ContentPage {
     Process {
         id: tpProc
         command: ["bash", "-c",
-            "grep -A5 touchpad \"" + root.envConf + "\" 2>/dev/null | grep natural_scroll || true"
+            "grep -A5 touchpad \"$1\" 2>/dev/null | grep natural_scroll || true",
+            "--", root.envConf
         ]
         stdout: SplitParser {
             onRead: data => {

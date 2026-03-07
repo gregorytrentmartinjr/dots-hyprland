@@ -98,7 +98,8 @@ ContentPage {
     // Write HandlePowerKey to logind drop-in and reload
     function applyPowerButton(action) {
         Quickshell.execDetached(["pkexec", "bash", "-c",
-            `mkdir -p /etc/systemd/logind.conf.d && printf '[Login]\\nHandlePowerKey=${action}\\n' > /etc/systemd/logind.conf.d/10-power-key.conf && systemctl kill -s HUP systemd-logind`
+            "mkdir -p /etc/systemd/logind.conf.d && printf '[Login]\\nHandlePowerKey=%s\\n' \"$1\" > /etc/systemd/logind.conf.d/10-power-key.conf && systemctl kill -s HUP systemd-logind",
+            "--", action
         ])
     }
 
@@ -106,8 +107,11 @@ ContentPage {
     // Requires a listener block with: on-timeout = hyprctl dispatch dpms off
     function applyScreenBlank(enabled, secs) {
         const timeout = enabled ? secs : 0
+        // Use env var T for timeout so perl's ${1}/${2} capture groups aren't
+        // clobbered by JS template-literal interpolation.
         Quickshell.execDetached(["bash", "-c",
-            `perl -i -0777 -pe 's/(timeout\\s*=\\s*)\\d+([^\\n]*\\n[^\\n]*on-timeout[^\\n]*dpms off)/${1}${timeout}${2}/g' '${hyprIdleConf}' && pkill -x hypridle; hypridle &`
+            "T=\"$1\" perl -i -0777 -pe 's/(timeout\\s*=\\s*)\\d+([^\\n]*\\n[^\\n]*on-timeout[^\\n]*dpms off)/${1}$ENV{T}${2}/g' \"$2\" && pkill -x hypridle; hypridle &",
+            "--", String(timeout), hyprIdleConf
         ])
     }
 
@@ -115,7 +119,8 @@ ContentPage {
     function applyAutoSuspend(enabled, secs) {
         const action = enabled ? "suspend" : "ignore"
         Quickshell.execDetached(["pkexec", "bash", "-c",
-            `mkdir -p /etc/systemd/logind.conf.d && printf '[Login]\\nIdleAction=${action}\\nIdleActionSec=${secs}\\n' > /etc/systemd/logind.conf.d/10-idle-action.conf && systemctl kill -s HUP systemd-logind`
+            "mkdir -p /etc/systemd/logind.conf.d && printf '[Login]\\nIdleAction=%s\\nIdleActionSec=%s\\n' \"$1\" \"$2\" > /etc/systemd/logind.conf.d/10-idle-action.conf && systemctl kill -s HUP systemd-logind",
+            "--", action, String(secs)
         ])
     }
 
