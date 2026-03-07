@@ -45,10 +45,7 @@ ContentPage {
     Process {
         id: logindReader
         command: ["bash", "-c",
-            "awk -F= '/HandlePowerKey/{gsub(/[[:space:]]/,\"\",$2); print \"powerkey=\"$2} /^IdleAction=/{gsub(/[[:space:]]/,\"\",$2); print \"idleaction=\"$2} /IdleActionSec/{gsub(/[[:space:]]/,\"\",$2); print \"idleactionsec=\"$2}' \"$1\" \"$2\" 2>/dev/null; true",
-            "--",
-            "/etc/systemd/logind.conf.d/10-power-key.conf",
-            "/etc/systemd/logind.conf.d/10-idle-action.conf"
+            "awk -F= '/HandlePowerKey/{gsub(/[[:space:]]/,\"\",$2); print \"powerkey=\"$2} /^IdleAction=/{gsub(/[[:space:]]/,\"\",$2); print \"idleaction=\"$2} /IdleActionSec/{gsub(/[[:space:]]/,\"\",$2); print \"idleactionsec=\"$2}' /etc/systemd/logind.conf.d/10-power-key.conf /etc/systemd/logind.conf.d/10-idle-action.conf 2>/dev/null; true"
         ]
         onExited: (code) => {
             const lines = stdout.trim().split("\n")
