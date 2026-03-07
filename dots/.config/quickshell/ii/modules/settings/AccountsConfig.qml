@@ -40,7 +40,7 @@ ContentPage {
 
     Process {
         id: currentUserProc
-        command: ["bash", "-c", "id -un"]
+        command: ["id", "-un"]
         property string buf: ""
         onRunningChanged: if (running) buf = ""
         stdout: SplitParser { onRead: data => currentUserProc.buf += data + "\n" }
@@ -86,16 +86,15 @@ ContentPage {
                 })
                 .filter(a => a.uid >= 1000 && a.uid < 65534
                              && !noLoginShells.some(s => a.shell.includes(s)))
-                .map(a => ({ name: a.name, uid: String(a.uid), home: a.home, isCurrent: a.isCurrent }))
+            // Cache current user's home before stripping fields
+            const me = parsed.find(a => a.isCurrent)
+            if (me) root.currentUserHome = me.home
             parsed.sort((a, b) => {
                 if (a.isCurrent) return -1
                 if (b.isCurrent) return 1
                 return a.name.localeCompare(b.name)
             })
-            root.accounts = parsed
-            // Cache the current user's home so the create form can reference it
-            const me = parsed.find(a => a.isCurrent)
-            if (me) root.currentUserHome = me.home
+            root.accounts = parsed.map(a => ({ name: a.name, isCurrent: a.isCurrent }))
         }
     }
 
@@ -135,10 +134,7 @@ ContentPage {
 
         Process {
             id: actionProc
-            property string buf: ""
-            stdout: SplitParser { onRead: data => actionProc.buf += data }
             onExited: (code) => {
-                actionProc.buf = ""
                 if (code === 0) {
                     root.showStatus(Translation.tr("Done! Changes have been saved."), false)
                     root.refresh()
@@ -398,7 +394,8 @@ ContentPage {
                                 const pass = newPassField.text
                                 newPassField.text = ""; confirmPassField.text = ""
                                 actionProc.command = ["pkexec", "bash", "-c",
-                                    `echo '${user}:${pass}' | chpasswd`
+                                    'printf "%s:%s\\n" "$1" "$2" | chpasswd',
+                                    "--", user, pass
                                 ]
                                 actionProc.running = true
                             }
@@ -518,10 +515,9 @@ ContentPage {
                             colBackground: Appearance.colors.colError
                             colBackgroundHover: Qt.rgba(0.9, 0.2, 0.2, 0.9)
                             onClicked: {
-                                const flag = deleteFilesSwitch.checked ? "-r" : ""
-                                actionProc.command = ["pkexec", "bash", "-c",
-                                    `userdel ${flag} '${account.name}'`.trim()
-                                ]
+                                actionProc.command = deleteFilesSwitch.checked
+                                    ? ["pkexec", "userdel", "-r", account.name]
+                                    : ["pkexec", "userdel", account.name]
                                 actionProc.running = true
                             }
                             contentItem: RowLayout {
@@ -542,17 +538,10 @@ ContentPage {
         title: Translation.tr("User Accounts")
 
         headerExtra: [
-            RippleButton {
-                implicitWidth: 90; implicitHeight: 32
-                buttonRadius: Appearance.rounding.full
-                colBackground: Appearance.colors.colLayer2
-                colBackgroundHover: Appearance.colors.colLayer2Hover
+            RippleButtonWithIcon {
+                materialIcon: "refresh"
+                mainText: Translation.tr("Refresh")
                 onClicked: root.refresh()
-                contentItem: RowLayout {
-                    anchors.centerIn: parent; spacing: 4
-                    MaterialSymbol { text: "refresh"; iconSize: 16; color: Appearance.colors.colOnLayer2 }
-                    StyledText { text: Translation.tr("Refresh"); font.pixelSize: Appearance.font.pixelSize.small; color: Appearance.colors.colOnLayer2 }
-                }
             }
         ]
 
@@ -608,86 +597,79 @@ ContentPage {
         icon: "person_add"
         title: Translation.tr("Add an Account")
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 10
-
-            ConfigRow {
-                uniform: true
-                MaterialTextField {
-                    id: newUserField
-                    Layout.fillWidth: true
-                    placeholderText: Translation.tr("Login name (no spaces)")
-                    inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
-                }
-                MaterialTextField {
-                    id: newUserPassField
-                    Layout.fillWidth: true
-                    placeholderText: Translation.tr("Password (optional)")
-                    echoMode: TextInput.Password
-                    inputMethodHints: Qt.ImhSensitiveData
-                }
-            }
-
-            ConfigSwitch {
-                id: createHomeSwitch
-                text: Translation.tr("Set up a personal folder for this account")
-                checked: true
-            }
-
-            ConfigSwitch {
-                id: copyConfigSwitch
-                enabled: createHomeSwitch.checked
-                opacity: createHomeSwitch.checked ? 1.0 : 0.4
-                text: Translation.tr("Copy your app settings into their account")
-                checked: true
-            }
-
-            RowLayout {
+        ConfigRow {
+            uniform: true
+            MaterialTextField {
+                id: newUserField
                 Layout.fillWidth: true
-                Item { Layout.fillWidth: true }
-                RippleButton {
-                    implicitWidth: 150; implicitHeight: 40
-                    buttonRadius: Appearance.rounding.full
-                    enabled: newUserField.text.length >= 1
-                             && !newUserField.text.includes(" ")
-                             && !createAccountProc.running
-                    colBackground: Appearance.colors.colPrimary
-                    colBackgroundHover: Appearance.colors.colPrimaryHover
-                    onClicked: {
-                        const username = newUserField.text.trim()
-                        const password = newUserPassField.text
-                        const homeFlag = createHomeSwitch.checked ? "-m" : "-M"
-                        let cmd = `useradd ${homeFlag} -s /bin/bash '${username}'`
-                        if (password.length > 0)
-                            cmd += ` && echo '${username}:${password}' | chpasswd`
-                        // Copy current user's .config into the new account's home.
-                        // We use cp -a to preserve timestamps/permissions, then
-                        // chown -R so the new user actually owns the copied files.
-                        if (createHomeSwitch.checked && copyConfigSwitch.checked) {
-                            const srcConfig = root.currentUserHome + "/.config"
-                            cmd += ` && [ -d "${srcConfig}" ]`
-                            cmd += ` && cp -a "${srcConfig}" "/home/${username}/.config"`
-                            cmd += ` && chown -R "${username}:${username}" "/home/${username}/.config"`
-                        }
-                        createAccountProc.command = ["pkexec", "bash", "-c", cmd]
-                        createAccountProc.running = true
-                        newUserField.text = ""
-                        newUserPassField.text = ""
+                placeholderText: Translation.tr("Login name (no spaces)")
+                inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+            }
+            MaterialTextField {
+                id: newUserPassField
+                Layout.fillWidth: true
+                placeholderText: Translation.tr("Password (optional)")
+                echoMode: TextInput.Password
+                inputMethodHints: Qt.ImhSensitiveData
+            }
+        }
+
+        ConfigSwitch {
+            id: createHomeSwitch
+            buttonIcon: "folder"
+            text: Translation.tr("Set up a personal folder for this account")
+            checked: true
+        }
+
+        ConfigSwitch {
+            id: copyConfigSwitch
+            buttonIcon: "content_copy"
+            enabled: createHomeSwitch.checked
+            opacity: createHomeSwitch.checked ? 1.0 : 0.4
+            text: Translation.tr("Copy your app settings into their account")
+            checked: true
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Item { Layout.fillWidth: true }
+            RippleButton {
+                implicitWidth: 150; implicitHeight: 40
+                buttonRadius: Appearance.rounding.full
+                enabled: newUserField.text.length >= 1
+                         && !newUserField.text.includes(" ")
+                         && !createAccountProc.running
+                colBackground: Appearance.colors.colPrimary
+                colBackgroundHover: Appearance.colors.colPrimaryHover
+                onClicked: {
+                    const username = newUserField.text.trim()
+                    const password = newUserPassField.text
+                    const homeFlag = createHomeSwitch.checked ? "-m" : "-M"
+                    const srcConfig = root.currentUserHome + "/.config"
+                    // Build script using positional args to avoid shell injection
+                    // $1 = homeFlag, $2 = username, $3 = password, $4 = srcConfig
+                    let script = 'useradd $1 -s /bin/bash "$2"'
+                    if (password.length > 0)
+                        script += ' && printf "%s:%s\\n" "$2" "$3" | chpasswd'
+                    if (createHomeSwitch.checked && copyConfigSwitch.checked)
+                        script += ' && [ -d "$4" ] && cp -a "$4" "/home/$2/.config" && chown -R "$2:$2" "/home/$2/.config"'
+                    createAccountProc.command = ["pkexec", "bash", "-c", script, "--", homeFlag, username, password, srcConfig]
+                    createAccountProc.running = true
+                    newUserField.text = ""
+                    newUserPassField.text = ""
+                }
+                contentItem: RowLayout {
+                    anchors.centerIn: parent; spacing: 6
+                    MaterialSymbol {
+                        text: createAccountProc.running ? "hourglass_top" : "person_add"
+                        iconSize: 18
+                        color: Appearance.colors.colOnPrimary
                     }
-                    contentItem: RowLayout {
-                        anchors.centerIn: parent; spacing: 6
-                        MaterialSymbol {
-                            text: createAccountProc.running ? "hourglass_top" : "person_add"
-                            iconSize: 18
-                            color: Appearance.colors.colOnPrimary
-                        }
-                        StyledText {
-                            text: createAccountProc.running
-                                ? Translation.tr("Creating…")
-                                : Translation.tr("Create Account")
-                            color: Appearance.colors.colOnPrimary
-                        }
+                    StyledText {
+                        text: createAccountProc.running
+                            ? Translation.tr("Creating…")
+                            : Translation.tr("Create Account")
+                        color: Appearance.colors.colOnPrimary
                     }
                 }
             }
