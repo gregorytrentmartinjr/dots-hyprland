@@ -74,22 +74,22 @@ ContentPage {
         title: Translation.tr("System Update")
 
         ContentSubsection {
-            title: Translation.tr("Topgrade flags")
+            title: Translation.tr("Options")
 
             ConfigRow {
                 uniform: true
                 ConfigSwitch {
                     buttonIcon: "check_circle"
-                    text: Translation.tr("Auto-confirm (--yes)")
+                    text: Translation.tr("Auto-confirm prompts")
                     checked: root.flagYes
                     onCheckedChanged: root.flagYes = checked
                     StyledToolTip {
-                        text: Translation.tr("Automatically say yes to prompts")
+                        text: Translation.tr("Automatically say yes to prompts during update")
                     }
                 }
                 ConfigSwitch {
                     buttonIcon: "desktop_windows"
-                    text: Translation.tr("Disable system packages")
+                    text: Translation.tr("Skip system packages")
                     checked: root.flagDisableSystem
                     onCheckedChanged: root.flagDisableSystem = checked
                     StyledToolTip {
@@ -101,13 +101,13 @@ ContentPage {
                 uniform: true
                 ConfigSwitch {
                     buttonIcon: "deployed_code"
-                    text: Translation.tr("Disable Flatpak")
+                    text: Translation.tr("Skip Flatpak apps")
                     checked: root.flagDisableFlatpak
                     onCheckedChanged: root.flagDisableFlatpak = checked
                 }
                 ConfigSwitch {
                     buttonIcon: "memory"
-                    text: Translation.tr("Disable firmware updates")
+                    text: Translation.tr("Skip firmware updates")
                     checked: root.flagDisableFirmware
                     onCheckedChanged: root.flagDisableFirmware = checked
                 }
@@ -115,7 +115,8 @@ ContentPage {
         }
 
         ContentSubsection {
-            title: Translation.tr("Additional arguments")
+            title: Translation.tr("Advanced")
+            visible: advancedToggle.checked
 
             Rectangle {
                 Layout.fillWidth: true
@@ -147,10 +148,12 @@ ContentPage {
                     }
                 }
             }
-        }
 
-        ContentSubsection {
-            title: Translation.tr("Command preview")
+            StyledText {
+                text: Translation.tr("Extra command-line arguments passed to topgrade")
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                color: Appearance.m3colors.m3outlineVariant
+            }
 
             Rectangle {
                 Layout.fillWidth: true
@@ -171,9 +174,21 @@ ContentPage {
                     wrapMode: Text.Wrap
                 }
             }
+
+            StyledText {
+                text: Translation.tr("Command preview")
+                font.pixelSize: Appearance.font.pixelSize.smaller
+                color: Appearance.m3colors.m3outlineVariant
+            }
         }
 
         ConfigRow {
+            ConfigSwitch {
+                id: advancedToggle
+                buttonIcon: "tune"
+                text: Translation.tr("Show advanced options")
+                checked: false
+            }
             RippleButtonWithIcon {
                 materialIcon: root.isRunning ? "stop" : "play_arrow"
                 mainText: root.isRunning ? Translation.tr("Stop") : Translation.tr("Start update")
