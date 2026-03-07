@@ -92,7 +92,8 @@ ContentPage {
         title: Translation.tr("System Update")
 
         ContentSubsection {
-            title: Translation.tr("Options")
+            title: Translation.tr("Advanced")
+            visible: advancedToggle.checked
 
             ConfigRow {
                 uniform: true
@@ -130,11 +131,6 @@ ContentPage {
                     onCheckedChanged: root.flagDisableFirmware = checked
                 }
             }
-        }
-
-        ContentSubsection {
-            title: Translation.tr("Advanced")
-            visible: advancedToggle.checked
 
             Rectangle {
                 Layout.fillWidth: true
