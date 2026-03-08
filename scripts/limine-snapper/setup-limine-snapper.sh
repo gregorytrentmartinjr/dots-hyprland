@@ -102,12 +102,12 @@ KERNEL_BASENAME=$(basename "$KERNEL")
 INITRAMFS_BASENAME=$(basename "$INITRAMFS")
 INITRAMFS_FB_BASENAME=$(basename "$INITRAMFS_FB")
 
-# Determine kernel cmdline
-CMDLINE="root=UUID=$ROOT_UUID rootflags=subvol=$ROOT_SUBVOL rw"
+# Determine kernel cmdline - silent boot (no text on boot/reboot/shutdown)
+CMDLINE="root=UUID=$ROOT_UUID rootflags=subvol=$ROOT_SUBVOL rw quiet loglevel=0 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"
 
-# Add any existing kernel parameters (quiet, splash, etc.)
+# Add any existing kernel parameters
 if [[ -f /etc/kernel/cmdline ]]; then
-    EXTRA_ARGS=$(cat /etc/kernel/cmdline | sed "s|root=[^ ]*||g; s|rootflags=[^ ]*||g; s|rw||g" | xargs)
+    EXTRA_ARGS=$(cat /etc/kernel/cmdline | sed "s|root=[^ ]*||g; s|rootflags=[^ ]*||g; s|rw||g; s|quiet||g; s|loglevel=[^ ]*||g; s|systemd\.show_status=[^ ]*||g; s|rd\.systemd\.show_status=[^ ]*||g; s|rd\.udev\.log_level=[^ ]*||g; s|vt\.global_cursor_default=[^ ]*||g" | xargs)
     [[ -n "$EXTRA_ARGS" ]] && CMDLINE="$CMDLINE $EXTRA_ARGS"
 fi
 
@@ -200,19 +200,71 @@ snapper -c root create --description "Fresh install" --type single
 # Regenerate limine entries with the new snapshot
 /usr/local/bin/limine-snapper-update
 
+# --- Step 6: Install pixie-sddm theme ---
+info "Installing pixie-sddm theme..."
+pacman -S --needed --noconfirm git sddm
+
+PIXIE_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$PIXIE_TMPDIR" "$TMPFILE"' EXIT
+git clone https://github.com/gregorytrentmartinjr/pixie-sddm.git "$PIXIE_TMPDIR"
+
+PIXIE_THEME_DIR="/usr/share/sddm/themes/pixie"
+rm -rf "$PIXIE_THEME_DIR" 2>/dev/null || true
+mkdir -p "$PIXIE_THEME_DIR"
+cp -r "$PIXIE_TMPDIR"/{assets,components,Main.qml,metadata.desktop,theme.conf,LICENSE} "$PIXIE_THEME_DIR/"
+chmod -R 755 "$PIXIE_THEME_DIR"
+
+# Apply as active SDDM theme
+mkdir -p /etc/sddm.conf.d
+echo -e "[Theme]\nCurrent=pixie" > /etc/sddm.conf.d/theme.conf
+
+# Enable SDDM
+systemctl enable sddm
+
+info "Pixie SDDM theme installed and applied"
+
+# --- Step 7: Configure silent boot/reboot/shutdown ---
+info "Configuring silent boot (no verbose text)..."
+
+# Suppress systemd startup/shutdown messages
+mkdir -p /etc/systemd/system.conf.d
+cat > /etc/systemd/system.conf.d/silent-boot.conf <<'SILENT_EOF'
+[Manager]
+ShowStatus=no
+StatusUnitFormat=
+SILENT_EOF
+
+# Suppress getty login prompt messages on TTY
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat > /etc/systemd/system/getty@tty1.service.d/silent.conf <<'GETTY_EOF'
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --skip-login --nonewline --noissue --noclear --login-options "-f root" %I $TERM
+GETTY_EOF
+
+# Suppress fsck messages during boot
+if [[ ! -f /etc/sysctl.d/20-quiet-printk.conf ]]; then
+    echo "kernel.printk = 3 3 3 3" > /etc/sysctl.d/20-quiet-printk.conf
+fi
+
+info "Silent boot configured"
+
 info "Setup complete!"
 echo ""
 echo -e "${GREEN}Summary:${NC}"
-echo "  Bootloader: limine (UEFI)"
+echo "  Bootloader: limine (UEFI, silent boot)"
 echo "  Snapshots:  snapper (root config)"
 echo "  Space limit: 20% of drive"
 echo "  Max snapshots: 5"
+echo "  SDDM theme: pixie-sddm"
 echo "  Config: $ESP/limine.conf"
 echo "  Generator: /usr/local/bin/limine-snapper-update"
 echo ""
 echo "  Pacman hooks installed - snapshot entries auto-update on:"
 echo "    - Kernel/initramfs updates"
 echo "    - Package installs/removals (via snap-pac)"
+echo ""
+echo "  Silent boot: no text on boot, reboot, or shutdown"
 echo ""
 echo "  Run 'limine-snapper-update' manually to refresh boot entries"
 echo "  Run 'snapper -c root list' to view snapshots"
