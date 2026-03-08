@@ -6,6 +6,12 @@
 
 set -euo pipefail
 
+# --- Options ---
+AUTO_YES=false
+if [[ "${1:-}" == "--yes" ]]; then
+  AUTO_YES=true
+fi
+
 # --- Configuration ---
 SNAPPER_SPACE_LIMIT="0.2"       # 20% of drive
 SNAPPER_NUMBER_LIMIT="5"        # Max 5 snapshots
@@ -47,8 +53,10 @@ echo "  2. Install limine as the UEFI bootloader"
 echo "  3. Install and configure snapper (20% space, max 5 snapshots)"
 echo "  4. Install hooks to auto-generate limine boot entries from snapshots"
 echo ""
-read -rp "Continue? [y/N] " confirm
-[[ "$confirm" =~ ^[Yy]$ ]] || exit 0
+if [[ "$AUTO_YES" != true ]]; then
+  read -rp "Continue? [y/N] " confirm
+  [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
+fi
 
 # --- Step 1: Remove existing bootloaders ---
 info "Removing existing bootloaders..."
