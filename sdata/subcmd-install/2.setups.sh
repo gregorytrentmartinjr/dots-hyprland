@@ -91,3 +91,36 @@ fi
 
 v gsettings set org.gnome.desktop.interface font-name 'Google Sans Flex Medium 11 @opsz=11,wght=500'
 v gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
+# Optional: Limine + Snapper automatic backup setup (Arch, btrfs, UEFI only)
+function setup_limine_snapper(){
+  local ROOT_FSTYPE
+  ROOT_FSTYPE=$(findmnt -n -o FSTYPE / 2>/dev/null || echo "")
+  if [[ "$OS_GROUP_ID" != "arch" ]]; then
+    echo -e "${STY_YELLOW}[$0]: Limine + Snapper setup is only supported on Arch Linux. Skipping.${STY_RST}"
+    return 0
+  fi
+  if [[ ! -d /sys/firmware/efi ]]; then
+    echo -e "${STY_YELLOW}[$0]: System is not booted in UEFI mode. Skipping limine + snapper setup.${STY_RST}"
+    return 0
+  fi
+  if [[ "$ROOT_FSTYPE" != "btrfs" ]]; then
+    echo -e "${STY_YELLOW}[$0]: Root filesystem is not btrfs (found: ${ROOT_FSTYPE:-unknown}). Skipping limine + snapper setup.${STY_RST}"
+    return 0
+  fi
+  echo -e "${STY_CYAN}[$0]: Your system qualifies for limine + snapper automatic backup setup.${STY_RST}"
+  echo "  This will:"
+  echo "    - Replace your current bootloader with limine"
+  echo "    - Configure snapper for automatic btrfs snapshots (20% space, max 5)"
+  echo "    - Add snapshot entries to the limine boot menu"
+  echo ""
+  local p
+  read -rp "Set up limine + snapper? [y/N] " p
+  if [[ "$p" =~ ^[Yy]$ ]]; then
+    x sudo bash "${REPO_ROOT}/scripts/limine-snapper/setup-limine-snapper.sh"
+  else
+    echo -e "${STY_BLUE}[$0]: Skipping limine + snapper setup.${STY_RST}"
+  fi
+}
+showfun setup_limine_snapper
+v setup_limine_snapper
