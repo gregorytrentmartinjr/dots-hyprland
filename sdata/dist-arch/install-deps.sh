@@ -78,7 +78,20 @@ install-local-pkgbuild() {
   x pushd $location
 
   source ./PKGBUILD
-  x yay -S --sudoloop $installflags --asdeps "${depends[@]}"
+  # Install dependencies one-by-one so a single package failure doesn't block the rest
+  local failed_deps=()
+  for dep in "${depends[@]}"; do
+    if ! yay -S --sudoloop $installflags --asdeps "$dep"; then
+      printf "${STY_YELLOW}[$0]: WARNING: Failed to install dependency '$dep', will retry after others.${STY_RST}\n"
+      failed_deps+=("$dep")
+    fi
+  done
+  # Retry failed deps once (they may have failed due to ordering/transient issues)
+  for dep in "${failed_deps[@]}"; do
+    if ! yay -S --sudoloop $installflags --asdeps "$dep"; then
+      printf "${STY_RED}[$0]: ERROR: Failed to install dependency '$dep'. You may need to install it manually.${STY_RST}\n"
+    fi
+  done
   # man makepkg:
   # -A, --ignorearch: Ignore a missing or incomplete arch field in the build script.
   # -s, --syncdeps: Install missing dependencies using pacman. When build-time or run-time dependencies are not found, pacman will try to resolve them.
