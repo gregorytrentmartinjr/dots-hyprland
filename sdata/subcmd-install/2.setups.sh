@@ -313,3 +313,20 @@ function setup_limine_snapper(){
 }
 showfun setup_limine_snapper
 v setup_limine_snapper
+
+# SDDM + pixie-sddm theme
+function setup_sddm_pixie(){
+  if [[ "$OS_GROUP_ID" != "arch" ]]; then
+    echo -e "${STY_YELLOW}[$0]: SDDM + pixie theme setup is only supported on Arch Linux. Skipping.${STY_RST}"
+    return 0
+  fi
+  local p
+  read -rp "Install SDDM with pixie theme? [y/N] " p
+  if [[ "$p" =~ ^[Yy]$ ]]; then
+    x sudo bash "${REPO_ROOT}/scripts/setup-sddm-pixie.sh"
+  else
+    echo -e "${STY_BLUE}[$0]: Skipping SDDM + pixie theme setup.${STY_RST}"
+  fi
+}
+showfun setup_sddm_pixie
+v setup_sddm_pixie
