@@ -46,3 +46,29 @@ else
     warn "Failed to clone pixie-sddm theme. Skipping theme installation."
     warn "You can install it later from: https://github.com/gregorytrentmartinjr/pixie-sddm"
 fi
+
+# --- Step 3: Configure silent boot/reboot/shutdown ---
+info "Configuring silent boot (no verbose text)..."
+
+# Suppress systemd startup/shutdown messages
+mkdir -p /etc/systemd/system.conf.d
+cat > /etc/systemd/system.conf.d/silent-boot.conf <<'SILENT_EOF'
+[Manager]
+ShowStatus=no
+StatusUnitFormat=
+SILENT_EOF
+
+# Suppress getty login prompt messages on TTY
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat > /etc/systemd/system/getty@tty1.service.d/silent.conf <<'GETTY_EOF'
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --skip-login --nonewline --noissue --noclear --login-options "-f root" %I $TERM
+GETTY_EOF
+
+# Suppress fsck messages during boot
+if [[ ! -f /etc/sysctl.d/20-quiet-printk.conf ]]; then
+    echo "kernel.printk = 3 3 3 3" > /etc/sysctl.d/20-quiet-printk.conf
+fi
+
+info "Silent boot configured"

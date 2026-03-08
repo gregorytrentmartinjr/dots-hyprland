@@ -235,36 +235,10 @@ if command -v limine-snapper-update &>/dev/null; then
     /usr/local/bin/limine-snapper-update
 fi
 
-# --- Step 6: Configure silent boot/reboot/shutdown ---
-info "Configuring silent boot (no verbose text)..."
-
-# Suppress systemd startup/shutdown messages
-mkdir -p /etc/systemd/system.conf.d
-cat > /etc/systemd/system.conf.d/silent-boot.conf <<'SILENT_EOF'
-[Manager]
-ShowStatus=no
-StatusUnitFormat=
-SILENT_EOF
-
-# Suppress getty login prompt messages on TTY
-mkdir -p /etc/systemd/system/getty@tty1.service.d
-cat > /etc/systemd/system/getty@tty1.service.d/silent.conf <<'GETTY_EOF'
-[Service]
-ExecStart=
-ExecStart=-/usr/bin/agetty --skip-login --nonewline --noissue --noclear --login-options "-f root" %I $TERM
-GETTY_EOF
-
-# Suppress fsck messages during boot
-if [[ ! -f /etc/sysctl.d/20-quiet-printk.conf ]]; then
-    echo "kernel.printk = 3 3 3 3" > /etc/sysctl.d/20-quiet-printk.conf
-fi
-
-info "Silent boot configured"
-
 info "Setup complete!"
 echo ""
 echo -e "${GREEN}Summary:${NC}"
-echo "  Bootloader: limine (UEFI, silent boot)"
+echo "  Bootloader: limine (UEFI)"
 echo "  Snapshots:  snapper (root config)"
 echo "  Space limit: 20% of drive"
 echo "  Max snapshots: 5"
@@ -274,8 +248,6 @@ echo ""
 echo "  Pacman hooks installed - snapshot entries auto-update on:"
 echo "    - Kernel/initramfs updates"
 echo "    - Package installs/removals (via snap-pac)"
-echo ""
-echo "  Silent boot: no text on boot, reboot, or shutdown"
 echo ""
 echo "  Run 'limine-snapper-update' manually to refresh boot entries"
 echo "  Run 'snapper -c root list' to view snapshots"
