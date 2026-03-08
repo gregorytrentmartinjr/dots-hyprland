@@ -412,7 +412,7 @@ Singleton {
             }
 
             property JsonObject launcher: JsonObject {
-                property list<string> pinnedApps: [ "org.kde.dolphin", "kitty", "cmake-gui"]
+                property list<string> pinnedApps: [ "nautilus", "kitty", "cmake-gui"]
             }
 
             property JsonObject light: JsonObject {
