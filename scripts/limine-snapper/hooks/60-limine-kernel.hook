@@ -1,0 +1,12 @@
+[Trigger]
+Type = Package
+Operation = Upgrade
+Target = linux
+Target = linux-lts
+Target = linux-zen
+Target = linux-hardened
+
+[Action]
+Description = Updating limine EFI binary after kernel upgrade...
+When = PostTransaction
+Exec = /bin/sh -c 'install -Dm644 /usr/share/limine/BOOTX64.EFI /boot/EFI/BOOT/BOOTX64.EFI && install -Dm644 /usr/share/limine/BOOTX64.EFI /boot/EFI/limine/BOOTX64.EFI'
