@@ -48,8 +48,8 @@ info "ESP mount: $ESP"
 
 echo ""
 echo -e "${YELLOW}This will:${NC}"
-echo "  1. Remove any existing bootloader (GRUB/systemd-boot)"
-echo "  2. Install limine as the UEFI bootloader"
+echo "  1. Install limine as the UEFI bootloader"
+echo "  2. Remove any existing bootloader (GRUB/systemd-boot) once limine is verified"
 echo "  3. Install and configure snapper (20% space, max 5 snapshots)"
 echo "  4. Install hooks to auto-generate limine boot entries from snapshots"
 echo ""
@@ -58,8 +58,94 @@ if [[ "$AUTO_YES" != true ]]; then
   [[ "$confirm" =~ ^[Yy]$ ]] || exit 0
 fi
 
-# --- Step 1: Remove existing bootloaders ---
-info "Removing existing bootloaders..."
+# --- Step 1: Install and configure limine FIRST (before removing old bootloader) ---
+info "Installing limine..."
+pacman -S --needed --noconfirm limine
+
+# Verify limine EFI binary exists
+LIMINE_EFI="/usr/share/limine/BOOTX64.EFI"
+if [[ ! -f "$LIMINE_EFI" ]]; then
+    error "Limine EFI binary not found at $LIMINE_EFI. The limine package may have changed its file layout."
+fi
+
+# Detect kernel and initramfs
+KERNEL=$(ls "$ESP"/vmlinuz-linux* 2>/dev/null | head -1 || true)
+INITRAMFS=$(ls "$ESP"/initramfs-linux*.img 2>/dev/null | grep -v fallback | head -1 || true)
+INITRAMFS_FB=$(ls "$ESP"/initramfs-linux*-fallback.img 2>/dev/null | head -1 || true)
+
+if [[ -z "$KERNEL" ]]; then
+    # Kernel might be at /boot inside root, not on ESP
+    if [[ "$ESP" == "/boot" ]] && [[ -f "/boot/vmlinuz-linux" ]]; then
+        KERNEL="/boot/vmlinuz-linux"
+        INITRAMFS="/boot/initramfs-linux.img"
+        INITRAMFS_FB="/boot/initramfs-linux-fallback.img"
+    else
+        error "Cannot find kernel at $ESP/vmlinuz-linux*. Aborting before any bootloader changes."
+    fi
+fi
+
+# Verify kernel and initramfs actually exist
+[[ -f "$KERNEL" ]] || error "Kernel not found at $KERNEL. Aborting before any bootloader changes."
+[[ -f "$INITRAMFS" ]] || error "Initramfs not found at $INITRAMFS. Aborting before any bootloader changes."
+
+KERNEL_BASENAME=$(basename "$KERNEL")
+INITRAMFS_BASENAME=$(basename "$INITRAMFS")
+INITRAMFS_FB_BASENAME=""
+if [[ -n "$INITRAMFS_FB" ]] && [[ -f "$INITRAMFS_FB" ]]; then
+    INITRAMFS_FB_BASENAME=$(basename "$INITRAMFS_FB")
+fi
+
+# Determine kernel cmdline - silent boot (no text on boot/reboot/shutdown)
+CMDLINE="root=UUID=$ROOT_UUID rootflags=subvol=$ROOT_SUBVOL rw quiet loglevel=0 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"
+
+# Add any existing kernel parameters
+if [[ -f /etc/kernel/cmdline ]]; then
+    EXTRA_ARGS=$(cat /etc/kernel/cmdline | sed "s|root=[^ ]*||g; s|rootflags=[^ ]*||g; s|rw||g; s|quiet||g; s|loglevel=[^ ]*||g; s|systemd\.show_status=[^ ]*||g; s|rd\.systemd\.show_status=[^ ]*||g; s|rd\.udev\.log_level=[^ ]*||g; s|vt\.global_cursor_default=[^ ]*||g" | xargs)
+    [[ -n "$EXTRA_ARGS" ]] && CMDLINE="$CMDLINE $EXTRA_ARGS"
+fi
+
+# Write limine.conf
+info "Writing limine.conf..."
+LIMINE_CONF_CONTENT="timeout: 5
+
+/Arch Linux
+    protocol: linux
+    kernel_path: boot():///$KERNEL_BASENAME
+    kernel_cmdline: $CMDLINE
+    module_path: boot():///$INITRAMFS_BASENAME"
+
+if [[ -n "$INITRAMFS_FB_BASENAME" ]]; then
+    LIMINE_CONF_CONTENT+="
+
+/Arch Linux (Fallback)
+    protocol: linux
+    kernel_path: boot():///$KERNEL_BASENAME
+    kernel_cmdline: $CMDLINE
+    module_path: boot():///$INITRAMFS_FB_BASENAME"
+fi
+
+LIMINE_CONF_CONTENT+="
+
+# --- Snapper Snapshots (auto-generated below) ---
+# SNAPPER_ENTRIES_START
+# SNAPPER_ENTRIES_END"
+
+echo "$LIMINE_CONF_CONTENT" > "$ESP/limine.conf"
+
+# Verify config was written
+[[ -f "$ESP/limine.conf" ]] || error "Failed to write limine.conf"
+
+# Install limine EFI binary
+install -Dm644 "$LIMINE_EFI" "$ESP/EFI/BOOT/BOOTX64.EFI"
+install -Dm644 "$LIMINE_EFI" "$ESP/EFI/limine/BOOTX64.EFI"
+
+# Verify EFI binary was installed
+[[ -f "$ESP/EFI/BOOT/BOOTX64.EFI" ]] || error "Failed to install limine EFI binary"
+
+info "Limine installed and configured"
+
+# --- Step 2: Now safe to remove old bootloaders ---
+info "Removing old bootloaders..."
 
 if pacman -Qi grub &>/dev/null; then
     pacman -Rns --noconfirm grub 2>/dev/null || true
@@ -72,67 +158,6 @@ if bootctl is-installed &>/dev/null 2>&1; then
     bootctl remove 2>/dev/null || true
     info "Removed systemd-boot"
 fi
-
-# --- Step 2: Install limine ---
-info "Installing limine..."
-pacman -S --needed --noconfirm limine
-
-# Install limine EFI binary
-install -Dm644 /usr/share/limine/BOOTX64.EFI "$ESP/EFI/BOOT/BOOTX64.EFI"
-install -Dm644 /usr/share/limine/BOOTX64.EFI "$ESP/EFI/limine/BOOTX64.EFI"
-
-# Detect kernel and initramfs
-KERNEL=$(ls "$ESP"/vmlinuz-linux* 2>/dev/null | head -1)
-INITRAMFS=$(ls "$ESP"/initramfs-linux*.img 2>/dev/null | grep -v fallback | head -1)
-INITRAMFS_FB=$(ls "$ESP"/initramfs-linux*-fallback.img 2>/dev/null | head -1)
-
-if [[ -z "$KERNEL" ]]; then
-    # Kernel might be at /boot inside root, not on ESP
-    # Check if ESP is /boot or separate
-    if [[ "$ESP" == "/boot" ]]; then
-        KERNEL="/boot/vmlinuz-linux"
-        INITRAMFS="/boot/initramfs-linux.img"
-        INITRAMFS_FB="/boot/initramfs-linux-fallback.img"
-    else
-        error "Cannot find kernel at $ESP/vmlinuz-linux*"
-    fi
-fi
-
-KERNEL_BASENAME=$(basename "$KERNEL")
-INITRAMFS_BASENAME=$(basename "$INITRAMFS")
-INITRAMFS_FB_BASENAME=$(basename "$INITRAMFS_FB")
-
-# Determine kernel cmdline - silent boot (no text on boot/reboot/shutdown)
-CMDLINE="root=UUID=$ROOT_UUID rootflags=subvol=$ROOT_SUBVOL rw quiet loglevel=0 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 vt.global_cursor_default=0"
-
-# Add any existing kernel parameters
-if [[ -f /etc/kernel/cmdline ]]; then
-    EXTRA_ARGS=$(cat /etc/kernel/cmdline | sed "s|root=[^ ]*||g; s|rootflags=[^ ]*||g; s|rw||g; s|quiet||g; s|loglevel=[^ ]*||g; s|systemd\.show_status=[^ ]*||g; s|rd\.systemd\.show_status=[^ ]*||g; s|rd\.udev\.log_level=[^ ]*||g; s|vt\.global_cursor_default=[^ ]*||g" | xargs)
-    [[ -n "$EXTRA_ARGS" ]] && CMDLINE="$CMDLINE $EXTRA_ARGS"
-fi
-
-info "Writing limine.conf..."
-cat > "$ESP/limine.conf" <<LIMINE_EOF
-timeout: 5
-
-/Arch Linux
-    protocol: linux
-    kernel_path: boot():///$KERNEL_BASENAME
-    kernel_cmdline: $CMDLINE
-    module_path: boot():///$INITRAMFS_BASENAME
-
-/Arch Linux (Fallback)
-    protocol: linux
-    kernel_path: boot():///$KERNEL_BASENAME
-    kernel_cmdline: $CMDLINE
-    module_path: boot():///$INITRAMFS_FB_BASENAME
-
-# --- Snapper Snapshots (auto-generated below) ---
-# SNAPPER_ENTRIES_START
-# SNAPPER_ENTRIES_END
-LIMINE_EOF
-
-info "Limine installed and configured"
 
 # --- Step 3: Install and configure snapper ---
 info "Installing snapper..."
@@ -184,44 +209,59 @@ info "Snapper configured"
 info "Installing limine-snapper entry generator..."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-install -Dm755 "$SCRIPT_DIR/limine-snapper-update.sh" /usr/local/bin/limine-snapper-update
+if [[ ! -f "$SCRIPT_DIR/limine-snapper-update.sh" ]]; then
+    warn "limine-snapper-update.sh not found at $SCRIPT_DIR. Skipping hook installation."
+else
+    install -Dm755 "$SCRIPT_DIR/limine-snapper-update.sh" /usr/local/bin/limine-snapper-update
 
-# Install pacman hooks
-install -Dm644 "$SCRIPT_DIR/hooks/90-limine-snapper.hook" /etc/pacman.d/hooks/90-limine-snapper.hook
-install -Dm644 "$SCRIPT_DIR/hooks/60-limine-kernel.hook" /etc/pacman.d/hooks/60-limine-kernel.hook
+    # Install pacman hooks
+    if [[ -f "$SCRIPT_DIR/hooks/90-limine-snapper.hook" ]]; then
+        install -Dm644 "$SCRIPT_DIR/hooks/90-limine-snapper.hook" /etc/pacman.d/hooks/90-limine-snapper.hook
+    fi
+    if [[ -f "$SCRIPT_DIR/hooks/60-limine-kernel.hook" ]]; then
+        install -Dm644 "$SCRIPT_DIR/hooks/60-limine-kernel.hook" /etc/pacman.d/hooks/60-limine-kernel.hook
+    fi
 
-# Run the generator once to populate entries
-/usr/local/bin/limine-snapper-update
+    # Run the generator once to populate entries
+    /usr/local/bin/limine-snapper-update
+fi
 
 # --- Step 5: Create initial snapshot ---
 info "Creating initial snapshot..."
 snapper -c root create --description "Fresh install" --type single
 
 # Regenerate limine entries with the new snapshot
-/usr/local/bin/limine-snapper-update
+if command -v limine-snapper-update &>/dev/null; then
+    /usr/local/bin/limine-snapper-update
+fi
 
 # --- Step 6: Install pixie-sddm theme ---
 info "Installing pixie-sddm theme..."
 pacman -S --needed --noconfirm git sddm
 
 PIXIE_TMPDIR=$(mktemp -d)
-trap 'rm -rf "$PIXIE_TMPDIR" "$TMPFILE"' EXIT
-git clone https://github.com/gregorytrentmartinjr/pixie-sddm.git "$PIXIE_TMPDIR"
+cleanup() { rm -rf "$PIXIE_TMPDIR"; }
+trap cleanup EXIT
 
-PIXIE_THEME_DIR="/usr/share/sddm/themes/pixie"
-rm -rf "$PIXIE_THEME_DIR" 2>/dev/null || true
-mkdir -p "$PIXIE_THEME_DIR"
-cp -r "$PIXIE_TMPDIR"/{assets,components,Main.qml,metadata.desktop,theme.conf,LICENSE} "$PIXIE_THEME_DIR/"
-chmod -R 755 "$PIXIE_THEME_DIR"
+if git clone https://github.com/gregorytrentmartinjr/pixie-sddm.git "$PIXIE_TMPDIR" 2>/dev/null; then
+    PIXIE_THEME_DIR="/usr/share/sddm/themes/pixie"
+    rm -rf "$PIXIE_THEME_DIR" 2>/dev/null || true
+    mkdir -p "$PIXIE_THEME_DIR"
+    cp -r "$PIXIE_TMPDIR"/{assets,components,Main.qml,metadata.desktop,theme.conf,LICENSE} "$PIXIE_THEME_DIR/"
+    chmod -R 755 "$PIXIE_THEME_DIR"
 
-# Apply as active SDDM theme
-mkdir -p /etc/sddm.conf.d
-echo -e "[Theme]\nCurrent=pixie" > /etc/sddm.conf.d/theme.conf
+    # Apply as active SDDM theme
+    mkdir -p /etc/sddm.conf.d
+    echo -e "[Theme]\nCurrent=pixie" > /etc/sddm.conf.d/theme.conf
 
-# Enable SDDM
-systemctl enable sddm
+    # Enable SDDM
+    systemctl enable sddm
 
-info "Pixie SDDM theme installed and applied"
+    info "Pixie SDDM theme installed and applied"
+else
+    warn "Failed to clone pixie-sddm theme. Skipping theme installation."
+    warn "You can install it later from: https://github.com/gregorytrentmartinjr/pixie-sddm"
+fi
 
 # --- Step 7: Configure silent boot/reboot/shutdown ---
 info "Configuring silent boot (no verbose text)..."

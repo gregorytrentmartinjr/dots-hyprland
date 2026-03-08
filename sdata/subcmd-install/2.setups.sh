@@ -137,7 +137,7 @@ NVIDIAEOF
         echo -e "${STY_CYAN}[$0]: Installing AMD GPU drivers...${STY_RST}"
         case "$OS_GROUP_ID" in
           arch)
-            x sudo pacman -S --needed --noconfirm mesa vulkan-radeon libva-mesa-driver mesa-vdpau
+            x sudo pacman -S --needed --noconfirm mesa vulkan-radeon libva-mesa-driver
             ;;
           fedora)
             x sudo dnf install -y mesa-dri-drivers mesa-vulkan-drivers mesa-va-drivers
