@@ -276,3 +276,16 @@ for pattern in "${patterns[@]}"; do
       ;;
   esac
 done
+
+# Nautilus bookmarks
+BOOKMARKS_FILE="${XDG_CONFIG_HOME}/gtk-3.0/bookmarks"
+if [ ! -f "$BOOKMARKS_FILE" ]; then
+    v mkdir -p "$(dirname "$BOOKMARKS_FILE")"
+    cat > "$BOOKMARKS_FILE" <<EOF
+file://${HOME}/Downloads Downloads
+file://${HOME}/Documents Documents
+file://${HOME}/Music Music
+file://${HOME}/Pictures Pictures
+file://${HOME}/Videos Videos
+EOF
+fi
