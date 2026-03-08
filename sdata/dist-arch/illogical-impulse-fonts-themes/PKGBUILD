@@ -19,6 +19,6 @@ depends=(
   ttf-jetbrains-mono-nerd
   ttf-material-symbols-variable-git
   ttf-readex-pro
-  otf-rubik
+  ttf-rubik-vf
   ttf-twemoji
 )
