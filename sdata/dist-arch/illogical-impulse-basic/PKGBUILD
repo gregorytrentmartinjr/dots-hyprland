@@ -20,6 +20,8 @@ depends=(
   fuse2
   less
   clinfo
+  power-profiles-daemon
+  topgrade
   # Used in install script
   rsync
   go-yq # https://github.com/mikefarah/yq
