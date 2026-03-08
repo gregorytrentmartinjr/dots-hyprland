@@ -22,7 +22,7 @@ function setup_user_group(){
 
 function setup_sddm_bg_polkit(){
   # Install polkit policy and rule so wallpaper changes can update SDDM background without a password
-  local helper_src="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ii/scripts/colors/sddm-bg-helper.sh"
+  local helper_src="${REPO_ROOT}/dots/.config/quickshell/ii/scripts/colors/sddm-bg-helper.sh"
   x sudo cp "$helper_src" /usr/local/bin/sddm-bg-helper
   x sudo chmod 755 /usr/local/bin/sddm-bg-helper
   x sudo cp "${REPO_ROOT}/sdata/polkit/org.illogicalimpulse.sddm-bg.policy" /usr/share/polkit-1/actions/
