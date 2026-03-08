@@ -235,36 +235,7 @@ if command -v limine-snapper-update &>/dev/null; then
     /usr/local/bin/limine-snapper-update
 fi
 
-# --- Step 6: Install SDDM ---
-info "Installing SDDM..."
-pacman -S --needed --noconfirm sddm
-systemctl enable sddm
-
-# --- Step 7: Install pixie-sddm theme ---
-info "Installing pixie-sddm theme..."
-
-PIXIE_TMPDIR=$(mktemp -d)
-cleanup() { rm -rf "$PIXIE_TMPDIR"; }
-trap cleanup EXIT
-
-if git clone https://github.com/gregorytrentmartinjr/pixie-sddm.git "$PIXIE_TMPDIR" 2>/dev/null; then
-    PIXIE_THEME_DIR="/usr/share/sddm/themes/pixie"
-    rm -rf "$PIXIE_THEME_DIR" 2>/dev/null || true
-    mkdir -p "$PIXIE_THEME_DIR"
-    cp -r "$PIXIE_TMPDIR"/{assets,components,Main.qml,metadata.desktop,theme.conf,LICENSE} "$PIXIE_THEME_DIR/"
-    chmod -R 755 "$PIXIE_THEME_DIR"
-
-    # Apply as active SDDM theme
-    mkdir -p /etc/sddm.conf.d
-    echo -e "[Theme]\nCurrent=pixie" > /etc/sddm.conf.d/theme.conf
-
-    info "Pixie SDDM theme installed and applied"
-else
-    warn "Failed to clone pixie-sddm theme. Skipping theme installation."
-    warn "You can install it later from: https://github.com/gregorytrentmartinjr/pixie-sddm"
-fi
-
-# --- Step 8: Configure silent boot/reboot/shutdown ---
+# --- Step 6: Configure silent boot/reboot/shutdown ---
 info "Configuring silent boot (no verbose text)..."
 
 # Suppress systemd startup/shutdown messages
@@ -297,7 +268,6 @@ echo "  Bootloader: limine (UEFI, silent boot)"
 echo "  Snapshots:  snapper (root config)"
 echo "  Space limit: 20% of drive"
 echo "  Max snapshots: 5"
-echo "  SDDM theme: pixie-sddm"
 echo "  Config: $ESP/limine.conf"
 echo "  Generator: /usr/local/bin/limine-snapper-update"
 echo ""
