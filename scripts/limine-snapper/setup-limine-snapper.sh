@@ -205,7 +205,18 @@ systemctl enable --now snapper-cleanup.timer
 
 info "Snapper configured"
 
-# --- Step 4: Install limine-snapper entry generator ---
+# --- Step 4: Install limine-snapper sync and mkinitcpio hook ---
+info "Installing limine-snapper-sync and limine-mkinitcpio-hook..."
+if command -v yay &>/dev/null; then
+    sudo -u "${SUDO_USER:-$USER}" yay -S --needed --noconfirm limine-snapper-sync limine-mkinitcpio-hook
+elif command -v paru &>/dev/null; then
+    sudo -u "${SUDO_USER:-$USER}" paru -S --needed --noconfirm limine-snapper-sync limine-mkinitcpio-hook
+else
+    warn "No AUR helper (yay/paru) found. Please install limine-snapper-sync and limine-mkinitcpio-hook manually."
+fi
+systemctl enable --now limine-snapper-sync.service
+
+# --- Step 5: Install limine-snapper entry generator ---
 info "Installing limine-snapper entry generator..."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -226,7 +237,7 @@ else
     /usr/local/bin/limine-snapper-update
 fi
 
-# --- Step 5: Create initial snapshot ---
+# --- Step 6: Create initial snapshot ---
 info "Creating initial snapshot..."
 snapper -c root create --description "Fresh install" --type single
 
