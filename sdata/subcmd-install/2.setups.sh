@@ -37,8 +37,166 @@ WantedBy=sleep.target
 EOF
   fi
 }
+function detect_gpu_vendors(){
+  # Returns space-separated list of: nvidia amd intel vm
+  local vendors=()
+
+  # Check for VM/virtual GPU first
+  if [[ -d /sys/class/dmi/id ]]; then
+    local sys_vendor
+    sys_vendor=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || echo "")
+    case "$sys_vendor" in
+      *QEMU*|*VirtualBox*|*VMware*|*Microsoft*|*Parallels*|*Xen*)
+        vendors+=(vm)
+        ;;
+    esac
+  fi
+
+  # Check PCI devices for GPU vendors
+  if command -v lspci >/dev/null 2>&1; then
+    local gpu_lines
+    gpu_lines=$(lspci -nn 2>/dev/null | grep -iE 'vga|3d|display' || true)
+    if echo "$gpu_lines" | grep -qi 'nvidia'; then
+      vendors+=(nvidia)
+    fi
+    if echo "$gpu_lines" | grep -qi 'amd\|ati\|radeon'; then
+      vendors+=(amd)
+    fi
+    if echo "$gpu_lines" | grep -qi 'intel'; then
+      vendors+=(intel)
+    fi
+  else
+    # Fallback: check sysfs vendor IDs
+    for d in /sys/class/drm/card*/device; do
+      [[ -r "$d/vendor" ]] || continue
+      local vid
+      vid=$(<"$d/vendor")
+      case "$vid" in
+        0x10de) [[ ! " ${vendors[*]} " =~ " nvidia " ]] && vendors+=(nvidia);;
+        0x1002) [[ ! " ${vendors[*]} " =~ " amd " ]] && vendors+=(amd);;
+        0x8086) [[ ! " ${vendors[*]} " =~ " intel " ]] && vendors+=(intel);;
+      esac
+    done
+  fi
+
+  echo "${vendors[*]}"
+}
+
+function setup_gpu_drivers(){
+  local vendors
+  vendors=$(detect_gpu_vendors)
+
+  if [[ -z "$vendors" ]]; then
+    echo -e "${STY_YELLOW}[$0]: No GPU detected. Skipping driver installation.${STY_RST}"
+    return 0
+  fi
+
+  echo -e "${STY_CYAN}[$0]: Detected GPU vendor(s): ${vendors}${STY_RST}"
+
+  for vendor in $vendors; do
+    case "$vendor" in
+      nvidia)
+        echo -e "${STY_CYAN}[$0]: Installing NVIDIA drivers...${STY_RST}"
+        case "$OS_GROUP_ID" in
+          arch)
+            # nvidia-dkms works across kernels; nvidia-utils for OpenGL, nvidia-settings for GUI config
+            x sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils nvidia-settings egl-wayland
+            # Enable DRM kernel mode setting for Wayland
+            if ! grep -q 'nvidia_drm.modeset=1' /etc/default/grub 2>/dev/null && [[ -f /etc/default/grub ]]; then
+              echo -e "${STY_YELLOW}[$0]: NOTE: You may need to add 'nvidia_drm.modeset=1' to your kernel parameters for Wayland.${STY_RST}"
+            fi
+            # Ensure nvidia modules load early
+            local mconf="/etc/modprobe.d/nvidia.conf"
+            if [[ ! -f "$mconf" ]]; then
+              echo -e "${STY_CYAN}[$0]: Creating modprobe config for early nvidia module loading...${STY_RST}"
+              x sudo tee "$mconf" > /dev/null <<'NVIDIAEOF'
+options nvidia_drm modeset=1 fbdev=1
+NVIDIAEOF
+            fi
+            ;;
+          fedora)
+            # Use RPM Fusion for NVIDIA on Fedora
+            if ! rpm -q rpmfusion-nonfree-release >/dev/null 2>&1; then
+              echo -e "${STY_YELLOW}[$0]: RPM Fusion (nonfree) is needed for NVIDIA drivers.${STY_RST}"
+              x sudo dnf install -y "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
+            fi
+            x sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvidia-vaapi-driver
+            ;;
+          gentoo)
+            echo -e "${STY_YELLOW}[$0]: For NVIDIA on Gentoo, please ensure your kernel config and USE flags are set.${STY_RST}"
+            echo -e "${STY_YELLOW}[$0]: See: https://wiki.gentoo.org/wiki/NVIDIA/nvidia-drivers${STY_RST}"
+            x sudo emerge --noreplace x11-drivers/nvidia-drivers
+            ;;
+          *)
+            echo -e "${STY_YELLOW}[$0]: NVIDIA detected but no automatic driver install for OS_GROUP_ID=${OS_GROUP_ID}.${STY_RST}"
+            echo -e "${STY_YELLOW}[$0]: Please install NVIDIA drivers manually.${STY_RST}"
+            ;;
+        esac
+        ;;
+      amd)
+        echo -e "${STY_CYAN}[$0]: Installing AMD GPU drivers...${STY_RST}"
+        case "$OS_GROUP_ID" in
+          arch)
+            x sudo pacman -S --needed --noconfirm mesa vulkan-radeon libva-mesa-driver mesa-vdpau
+            ;;
+          fedora)
+            x sudo dnf install -y mesa-dri-drivers mesa-vulkan-drivers mesa-va-drivers
+            ;;
+          gentoo)
+            echo -e "${STY_YELLOW}[$0]: For AMD on Gentoo, ensure VIDEO_CARDS=\"amdgpu radeonsi\" in make.conf.${STY_RST}"
+            x sudo emerge --noreplace media-libs/mesa
+            ;;
+          *)
+            echo -e "${STY_YELLOW}[$0]: AMD GPU detected but no automatic driver install for OS_GROUP_ID=${OS_GROUP_ID}.${STY_RST}"
+            ;;
+        esac
+        ;;
+      intel)
+        echo -e "${STY_CYAN}[$0]: Installing Intel GPU drivers...${STY_RST}"
+        case "$OS_GROUP_ID" in
+          arch)
+            x sudo pacman -S --needed --noconfirm mesa vulkan-intel intel-media-driver
+            ;;
+          fedora)
+            x sudo dnf install -y mesa-dri-drivers mesa-vulkan-drivers intel-media-driver
+            ;;
+          gentoo)
+            echo -e "${STY_YELLOW}[$0]: For Intel on Gentoo, ensure VIDEO_CARDS=\"intel\" in make.conf.${STY_RST}"
+            x sudo emerge --noreplace media-libs/mesa
+            ;;
+          *)
+            echo -e "${STY_YELLOW}[$0]: Intel GPU detected but no automatic driver install for OS_GROUP_ID=${OS_GROUP_ID}.${STY_RST}"
+            ;;
+        esac
+        ;;
+      vm)
+        echo -e "${STY_CYAN}[$0]: Virtual machine detected. Installing VM display drivers...${STY_RST}"
+        case "$OS_GROUP_ID" in
+          arch)
+            x sudo pacman -S --needed --noconfirm mesa xf86-video-vmware
+            ;;
+          fedora)
+            x sudo dnf install -y mesa-dri-drivers xorg-x11-drv-vmware
+            ;;
+          gentoo)
+            x sudo emerge --noreplace media-libs/mesa
+            ;;
+          *)
+            echo -e "${STY_YELLOW}[$0]: VM detected but no automatic driver install for OS_GROUP_ID=${OS_GROUP_ID}.${STY_RST}"
+            ;;
+        esac
+        ;;
+    esac
+  done
+}
+
 #####################################################################################
 # These python packages are installed using uv into the venv (virtual environment). Once the folder of the venv gets deleted, they are all gone cleanly. So it's considered as setups, not dependencies.
+if [[ "${SKIP_GPUDRIVERS}" != true ]]; then
+  showfun setup_gpu_drivers
+  v setup_gpu_drivers
+fi
+
 showfun install-python-packages
 v install-python-packages
 
