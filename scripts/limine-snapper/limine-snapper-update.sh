@@ -78,5 +78,5 @@ awk -v entries="$ENTRIES" '
 cp "$TMPFILE" "$LIMINE_CONF"
 
 # Count entries
-SNAP_COUNT=$(snapper -c "$SNAPPER_CONFIG" list 2>/dev/null | tail -n +4 | grep -cv '^$' || echo 0)
+SNAP_COUNT=$(snapper -c "$SNAPPER_CONFIG" list 2>/dev/null | tail -n +4 | grep -cv '^$') || SNAP_COUNT=0
 echo "limine-snapper: Updated $LIMINE_CONF with $((SNAP_COUNT > 0 ? SNAP_COUNT - 1 : 0)) snapshot entries"
