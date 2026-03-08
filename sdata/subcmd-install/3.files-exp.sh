@@ -289,3 +289,7 @@ file://${HOME}/Pictures Pictures
 file://${HOME}/Videos Videos
 EOF
 fi
+
+# Set Nautilus as default file manager and ensure XDG user dirs exist
+xdg-mime default org.gnome.Nautilus.desktop inode/directory
+xdg-user-dirs-update

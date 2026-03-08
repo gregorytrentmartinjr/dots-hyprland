@@ -82,4 +82,8 @@ EOF
     realpath -se "$BOOKMARKS_FILE" >> "${INSTALLED_LISTFILE}"
 fi
 
+# Set Nautilus as default file manager and ensure XDG user dirs exist
+xdg-mime default org.gnome.Nautilus.desktop inode/directory
+xdg-user-dirs-update
+
 install_file "dots/.local/share/icons/illogical-impulse.svg" "${XDG_DATA_HOME}"/icons/illogical-impulse.svg
