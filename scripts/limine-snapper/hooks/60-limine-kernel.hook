@@ -2,9 +2,6 @@
 Type = Package
 Operation = Upgrade
 Target = linux
-Target = linux-lts
-Target = linux-zen
-Target = linux-hardened
 
 [Action]
 Description = Updating limine EFI binary after kernel upgrade...
