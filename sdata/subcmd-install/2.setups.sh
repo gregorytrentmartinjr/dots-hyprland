@@ -117,7 +117,7 @@ function setup_limine_snapper(){
   local p
   read -rp "Set up limine + snapper? [y/N] " p
   if [[ "$p" =~ ^[Yy]$ ]]; then
-    x sudo bash "${REPO_ROOT}/scripts/limine-snapper/setup-limine-snapper.sh"
+    x sudo bash "${REPO_ROOT}/scripts/limine-snapper/setup-limine-snapper.sh" --yes
   else
     echo -e "${STY_BLUE}[$0]: Skipping limine + snapper setup.${STY_RST}"
   fi
