@@ -180,7 +180,7 @@ Item {
             delegateIndex: {
                 // Index within pinnedApps only (not the full list)
                 var pinnedApps = Config.options?.dock.pinnedApps ?? [];
-                return pinnedApps.indexOf(modelData.appId.toLowerCase());
+                return pinnedApps.findIndex(id => id.toLowerCase() === modelData.appId.toLowerCase());
             }
             buttonIndex: index
 
