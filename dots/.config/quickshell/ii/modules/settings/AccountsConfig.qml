@@ -151,7 +151,7 @@ ContentPage {
 
         Process {
             id: imagePickerProc
-            command: ["kdialog", "--getopenfilename", ".", "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)"]
+            command: ["kdialog", "--getopenfilename", Directories.pictures, "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)", "--title", Translation.tr("Choose login image")]
             property string buf: ""
             onRunningChanged: if (running) buf = ""
             stdout: SplitParser { onRead: data => imagePickerProc.buf += data }
