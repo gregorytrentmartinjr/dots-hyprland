@@ -23,7 +23,7 @@ ContentPage {
     property string customArgs: ""
 
     function buildCommand() {
-        let args = ["topgrade", "--cleanup", "--sudo-cmd", "pkexec"];
+        let args = ["topgrade", "--cleanup"];
         if (flagYes) args.push("--yes");
         if (flagDisableSystem) { args.push("--disable"); args.push("system"); }
         if (flagDisableFlatpak) { args.push("--disable"); args.push("flatpak"); }
