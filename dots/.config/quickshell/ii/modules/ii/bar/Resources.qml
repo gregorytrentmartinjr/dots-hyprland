@@ -1,4 +1,5 @@
 import qs.modules.common
+import qs.modules.common.functions
 import qs.services
 import QtQuick
 import QtQuick.Layouts
@@ -10,6 +11,8 @@ MouseArea {
     implicitWidth: rowLayout.implicitWidth + rowLayout.anchors.leftMargin + rowLayout.anchors.rightMargin
     implicitHeight: Appearance.sizes.barHeight
     hoverEnabled: !Config.options.bar.tooltips.clickToShow
+    acceptedButtons: Qt.LeftButton
+    onClicked: Session.launchTaskManager()
 
     RowLayout {
         id: rowLayout
