@@ -302,6 +302,32 @@ v gsettings set org.gnome.desktop.interface font-name 'Google Sans Flex Medium 1
 v gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 v gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
 
+# Set mpv as default video player for all video MIME types
+function setup_default_video_player(){
+  local video_types=(
+    video/mp4
+    video/x-matroska
+    video/webm
+    video/x-msvideo
+    video/mpeg
+    video/ogg
+    video/quicktime
+    video/x-flv
+    video/3gpp
+    video/3gpp2
+    video/x-ms-wmv
+    video/x-ms-asf
+    video/mp2t
+    video/vnd.mpegurl
+    video/x-m4v
+  )
+  for mime in "${video_types[@]}"; do
+    v xdg-mime default mpv.desktop "$mime"
+  done
+}
+showfun setup_default_video_player
+v setup_default_video_player
+
 # Optional: Limine + Snapper automatic backup setup (Arch, btrfs, UEFI only)
 function setup_limine_snapper(){
   local ROOT_FSTYPE
