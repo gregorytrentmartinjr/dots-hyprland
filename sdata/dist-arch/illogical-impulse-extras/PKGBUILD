@@ -19,6 +19,7 @@ depends=(
   impression
   libreoffice-fresh
   gnome-text-editor
+  gimp
   mpv
   mpv-modernz
   mpv-thumbfast
