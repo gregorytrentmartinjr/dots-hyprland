@@ -22,7 +22,6 @@ depends=(
   clinfo
   power-profiles-daemon
   topgrade
-  pkexec
   cpio
   ksshaskpass
   # Used in install script
