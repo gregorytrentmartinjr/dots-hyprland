@@ -26,8 +26,6 @@ optdepends=(
   'spotify: Music streaming'
   'satty: Screenshot annotation'
   'snapper: Btrfs snapshot manager'
-  'snapper-gui: Snapper GUI'
-  'krita: Digital painting'
   'gimp: Image editor'
   'fastfetch: System info'
   'topgrade: System updater'
