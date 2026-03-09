@@ -252,6 +252,11 @@ if [[ ! -z $(systemctl --version) ]]; then
     fi
   fi
   v sudo systemctl enable bluetooth --now
+  # Enable Bluetooth autoconnect for paired devices
+  if [ -f /etc/bluetooth/main.conf ]; then
+    v sudo sed -i 's/^#\?AutoEnable\s*=.*/AutoEnable=true/' /etc/bluetooth/main.conf
+    grep -q '^AutoEnable' /etc/bluetooth/main.conf || v sudo sed -i '/^\[Policy\]/a AutoEnable=true' /etc/bluetooth/main.conf
+  fi
   # Install power button helper and polkit policy
   showfun setup_power_key_polkit
   v setup_power_key_polkit
@@ -264,6 +269,11 @@ elif [[ ! -z $(openrc --version) ]]; then
   v sudo rc-update add modules boot
   v sudo rc-update add ydotool default
   v sudo rc-update add bluetooth default
+  # Enable Bluetooth autoconnect for paired devices
+  if [ -f /etc/bluetooth/main.conf ]; then
+    v sudo sed -i 's/^#\?AutoEnable\s*=.*/AutoEnable=true/' /etc/bluetooth/main.conf
+    grep -q '^AutoEnable' /etc/bluetooth/main.conf || v sudo sed -i '/^\[Policy\]/a AutoEnable=true' /etc/bluetooth/main.conf
+  fi
 
   x sudo rc-service ydotool start
   x sudo rc-service bluetooth start
