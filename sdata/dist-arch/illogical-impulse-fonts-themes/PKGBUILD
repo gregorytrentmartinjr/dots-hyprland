@@ -9,6 +9,7 @@ depends=(
   breeze
   breeze-plus
   darkly-bin
+  papirus-icon-theme
   eza
   fish
   fontconfig

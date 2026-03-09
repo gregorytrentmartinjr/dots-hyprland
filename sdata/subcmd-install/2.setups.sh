@@ -290,6 +290,7 @@ fi
 
 v gsettings set org.gnome.desktop.interface font-name 'Google Sans Flex Medium 11 @opsz=11,wght=500'
 v gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+v gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
 
 # Optional: Limine + Snapper automatic backup setup (Arch, btrfs, UEFI only)
 function setup_limine_snapper(){
