@@ -180,7 +180,7 @@ Singleton {
                             property string minuteHandStyle: "medium" // Options "classic", "thin", "medium", "bold", "hide"
                             property string secondHandStyle: "dot"    // Options: "dot", "line", "classic", "hide"
                             property string dateStyle: "bubble"       // Options: "border", "rect", "bubble" , "hide"
-                            property bool timeIndicators: true
+                            property bool timeIndicators: false
                             property bool hourMarks: false
                             property bool dateInClock: true
                             property bool constantlyRotate: false
