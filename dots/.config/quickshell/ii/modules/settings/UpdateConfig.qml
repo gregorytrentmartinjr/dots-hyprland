@@ -23,16 +23,33 @@ ContentPage {
     property string customArgs: ""
 
     function buildCommand() {
-        let args = ["topgrade", "--cleanup"];
-        if (flagYes) args.push("--yes");
-        if (flagDisableSystem) { args.push("--disable"); args.push("system"); }
-        if (flagDisableFlatpak) { args.push("--disable"); args.push("flatpak"); }
-        if (flagDisableFirmware) { args.push("--disable"); args.push("firmware"); }
-        if (customArgs.trim().length > 0) {
-            const extra = customArgs.trim().split(/\s+/);
-            for (const a of extra) args.push(a);
-        }
+        let args = ["bash", "-c", buildTopgradeCommand()];
         return args;
+    }
+
+    function buildTopgradeCommand() {
+        let parts = ["topgrade", "--cleanup"];
+        if (flagYes) parts.push("--yes");
+        if (flagDisableSystem) { parts.push("--disable"); parts.push("system"); }
+        if (flagDisableFlatpak) { parts.push("--disable"); parts.push("flatpak"); }
+        if (flagDisableFirmware) { parts.push("--disable"); parts.push("firmware"); }
+        if (customArgs.trim().length > 0) {
+            parts.push(customArgs.trim());
+        }
+        // Acquire sudo upfront via askpass, then run topgrade
+        return `sudo -A -v && ${parts.join(" ")}`;
+    }
+
+    function commandPreview() {
+        let parts = ["topgrade", "--cleanup"];
+        if (flagYes) parts.push("--yes");
+        if (flagDisableSystem) { parts.push("--disable"); parts.push("system"); }
+        if (flagDisableFlatpak) { parts.push("--disable"); parts.push("flatpak"); }
+        if (flagDisableFirmware) { parts.push("--disable"); parts.push("firmware"); }
+        if (customArgs.trim().length > 0) {
+            parts.push(customArgs.trim());
+        }
+        return parts.join(" ");
     }
 
     function startUpdate() {
@@ -52,6 +69,9 @@ ContentPage {
 
     Process {
         id: topgradeProc
+        environment: ({
+            "SUDO_ASKPASS": Directories.scriptPath.toString().replace("file://", "") + "/sudo-askpass.sh"
+        })
         stdout: SplitParser {
             onRead: data => {
                 root.outputText += data + "\n";
@@ -77,7 +97,10 @@ ContentPage {
 
     Process {
         id: lockCleanupProc
-        command: ["sudo", "rm", "-f", "/var/lib/pacman/db.lck"]
+        command: ["sudo", "-A", "rm", "-f", "/var/lib/pacman/db.lck"]
+        environment: ({
+            "SUDO_ASKPASS": Directories.scriptPath.toString().replace("file://", "") + "/sudo-askpass.sh"
+        })
         onExited: (exitCode, exitStatus) => {
             if (exitCode === 0) {
                 root.outputText += "\n" + Translation.tr("Pacman lock file removed.");
@@ -204,7 +227,7 @@ ContentPage {
                         fill: parent
                         margins: 8
                     }
-                    text: root.buildCommand().join(" ")
+                    text: root.commandPreview()
                     font.family: Appearance.font.family.monospace
                     font.pixelSize: Appearance.font.pixelSize.small
                     color: Appearance.colors.colOnLayer1
