@@ -86,6 +86,14 @@ install-local-pkgbuild() {
       failed_deps+=("$dep")
     fi
   done
+  # Also install optdepends (strip description after colon) so they're present initially but removable
+  for dep in "${optdepends[@]}"; do
+    local pkg="${dep%%:*}"
+    if ! yay -S --sudoloop $installflags --asdeps "$pkg"; then
+      printf "${STY_YELLOW}[$0]: WARNING: Failed to install optional dependency '$pkg', will retry after others.${STY_RST}\n"
+      failed_deps+=("$pkg")
+    fi
+  done
   # Retry failed deps once (they may have failed due to ordering/transient issues)
   for dep in "${failed_deps[@]}"; do
     if ! yay -S --sudoloop $installflags --asdeps "$dep"; then
