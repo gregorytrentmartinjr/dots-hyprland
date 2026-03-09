@@ -45,6 +45,13 @@ EOF
   fi
 }
 
+function setup_sudo_pwfeedback(){
+  if [[ ! -f "/etc/sudoers.d/pwfeedback" ]]; then
+    x bash -c "echo 'Defaults pwfeedback' | sudo tee /etc/sudoers.d/pwfeedback > /dev/null"
+    x sudo chmod 0440 /etc/sudoers.d/pwfeedback
+  fi
+}
+
 function setup_kill_fprintd_service(){
   # Fix fingerprint bug when sleeping
   # Fprintd waits 30 seconds after a successful login before quitting, so sleeping during that time period may cause fprintd to break.
@@ -230,6 +237,9 @@ v setup_user_group
 
 showfun setup_sddm_bg_polkit
 v setup_sddm_bg_polkit
+
+showfun setup_sudo_pwfeedback
+v setup_sudo_pwfeedback
 
 if [[ ! -z $(systemctl --version) ]]; then
   # For Fedora, uinput is required for the virtual keyboard to function, and udev rules enable input group users to utilize it.
