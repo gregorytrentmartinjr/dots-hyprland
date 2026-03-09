@@ -28,6 +28,7 @@ depends=(
   snapper
   snapper-gui
   krita
+  gimp
   fastfetch
   topgrade
   ksshaskpass
