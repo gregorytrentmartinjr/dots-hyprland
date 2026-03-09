@@ -151,7 +151,6 @@ ContentPage {
 
         Process {
             id: imagePickerProc
-            command: ["kdialog", "--getopenfilename", Directories.pictures, "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)", "--title", Translation.tr("Choose login image")]
             property string buf: ""
             onRunningChanged: if (running) buf = ""
             stdout: SplitParser { onRead: data => imagePickerProc.buf += data }
@@ -188,6 +187,14 @@ ContentPage {
                     root.showStatus(Translation.tr("Could not update the login image."), true)
                 }
             }
+        }
+
+        function pickAndApplyLoginImage() {
+            imagePickerProc.command = ["bash", "-c",
+                'kdialog --getopenfilename "$1" "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)" --title "$2"',
+                "--", Directories.pictures, Translation.tr("Choose login image")
+            ]
+            imagePickerProc.running = true
         }
 
         ColumnLayout {
@@ -371,7 +378,7 @@ ContentPage {
                         enabled: !item.working && !imagePickerProc.running
                         colBackground: Appearance.colors.colLayer2
                         colBackgroundHover: Appearance.colors.colLayer2Hover
-                        onClicked: imagePickerProc.running = true
+                        onClicked: item.pickAndApplyLoginImage()
                         contentItem: RowLayout {
                             id: changeImageContent
                             anchors.centerIn: parent; spacing: 5
