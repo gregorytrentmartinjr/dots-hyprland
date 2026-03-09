@@ -9,7 +9,7 @@ Singleton {
     id: root
 
     function isPinned(appId) {
-        return Config.options.dock.pinnedApps.indexOf(appId) !== -1;
+        return Config.options.dock.pinnedApps.some(id => id.toLowerCase() === appId.toLowerCase());
     }
 
     function reorderPinned(from, to) {
@@ -21,7 +21,7 @@ Singleton {
 
     function togglePin(appId) {
         if (root.isPinned(appId)) {
-            Config.options.dock.pinnedApps = Config.options.dock.pinnedApps.filter(id => id !== appId)
+            Config.options.dock.pinnedApps = Config.options.dock.pinnedApps.filter(id => id.toLowerCase() !== appId.toLowerCase())
         } else {
             Config.options.dock.pinnedApps = Config.options.dock.pinnedApps.concat([appId])
         }
@@ -35,13 +35,14 @@ Singleton {
         for (const appId of pinnedApps) {
             if (!map.has(appId.toLowerCase())) map.set(appId.toLowerCase(), ({
                 pinned: true,
-                toplevels: []
+                toplevels: [],
+                originalId: appId
             }));
         }
 
         // Separator
         if (pinnedApps.length > 0) {
-            map.set("SEPARATOR", { pinned: false, toplevels: [] });
+            map.set("SEPARATOR", { pinned: false, toplevels: [], originalId: "SEPARATOR" });
         }
 
         // Ignored apps
@@ -52,7 +53,8 @@ Singleton {
             if (ignoredRegexes.some(re => re.test(toplevel.appId))) continue;
             if (!map.has(toplevel.appId.toLowerCase())) map.set(toplevel.appId.toLowerCase(), ({
                 pinned: false,
-                toplevels: []
+                toplevels: [],
+                originalId: toplevel.appId
             }));
             map.get(toplevel.appId.toLowerCase()).toplevels.push(toplevel);
         }
@@ -60,7 +62,7 @@ Singleton {
         var values = [];
 
         for (const [key, value] of map) {
-            values.push(appEntryComp.createObject(null, { appId: key, toplevels: value.toplevels, pinned: value.pinned }));
+            values.push(appEntryComp.createObject(null, { appId: value.originalId, toplevels: value.toplevels, pinned: value.pinned }));
         }
 
         return values;
