@@ -352,7 +352,7 @@ Item {
                             
                             IconImage {
                                 Layout.alignment: Qt.AlignHCenter
-                                source: Quickshell.iconPath(modelData.icon, "image-missing")
+                                source: Quickshell.iconPath(AppSearch.guessIcon(modelData.id || modelData.icon), "image-missing")
                                 implicitSize: root.iconSize
                             }
                             
