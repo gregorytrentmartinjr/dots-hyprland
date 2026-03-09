@@ -386,7 +386,7 @@ Singleton {
                 property bool pinnedOnStartup: false
                 property bool hoverToReveal: true // When false, only reveals on empty workspace
                 property list<string> pinnedApps: [ // IDs of pinned entries
-                    "google-chrome", "nautilus", "gnome-text-editor", "gimp", "mpv", "spotify", "kitty", "gnome-software",]
+                    "google-chrome", "org.gnome.Nautilus", "org.gnome.TextEditor", "org.gimp.GIMP", "mpv", "spotify", "kitty", "org.gnome.Software",]
                 property list<string> ignoredAppRegexes: []
             }
 
@@ -412,7 +412,7 @@ Singleton {
             }
 
             property JsonObject launcher: JsonObject {
-                property list<string> pinnedApps: [ "nautilus", "kitty", "cmake-gui"]
+                property list<string> pinnedApps: [ "org.gnome.Nautilus", "kitty", "cmake-gui"]
             }
 
             property JsonObject light: JsonObject {
