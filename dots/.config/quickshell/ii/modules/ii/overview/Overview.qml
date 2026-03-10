@@ -7,6 +7,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Widgets
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
@@ -62,6 +63,7 @@ Scope {
         Connections {
             target: GlobalFocusGrab
             function onDismissed() {
+                if (contentFade.appDragging) return  // don't close during app drag
                 GlobalStates.overviewOpen = false;
             }
         }
@@ -75,6 +77,7 @@ Scope {
             id: contentFade
             anchors.fill: parent
             opacity: GlobalStates.overviewOpen ? 1 : 0
+            property bool appDragging: false
             Behavior on opacity {
                 NumberAnimation {
                     duration: Appearance.animation.elementMoveFast.duration
@@ -83,6 +86,63 @@ Scope {
                 }
             }
 
+        // Floating icon that follows the cursor during app drag
+        Rectangle {
+            id: dragFloatIcon
+            z: 9999
+            visible: false
+            width: 56
+            height: 56
+            radius: Appearance.rounding.normal
+            color: Appearance.colors.colSecondaryContainer
+            opacity: 0.92
+            property var app: null
+
+            IconImage {
+                anchors.centerIn: parent
+                source: dragFloatIcon.app
+                    ? Quickshell.iconPath(AppSearch.guessIcon(
+                          dragFloatIcon.app.id || dragFloatIcon.app.icon), "image-missing")
+                    : ""
+                implicitSize: 40
+            }
+        }
+
+        Connections {
+            target: appDrawer
+
+            function onAppDragUpdate(app, sceneX, sceneY) {
+                contentFade.appDragging = true
+                dragFloatIcon.app = app
+                dragFloatIcon.x = sceneX - dragFloatIcon.width  / 2
+                dragFloatIcon.y = sceneY - dragFloatIcon.height / 2
+                dragFloatIcon.visible = true
+                const ws = overviewLoader.item
+                    ? overviewLoader.item.workspaceAtScenePoint(sceneX, sceneY)
+                    : -1
+                if (overviewLoader.item) overviewLoader.item.appDragHoverWorkspace = ws
+            }
+
+            function onAppDropped(appId, sceneX, sceneY) {
+                contentFade.appDragging = false
+                dragFloatIcon.visible = false
+                if (overviewLoader.item) overviewLoader.item.appDragHoverWorkspace = -1
+                const ws = overviewLoader.item
+                    ? overviewLoader.item.workspaceAtScenePoint(sceneX, sceneY)
+                    : -1
+                if (ws > 0 && appId) {
+                    const cmd = `sh -c 'f="$HOME/.local/share/applications/${appId}.desktop"; [ -f "$f" ] || f="/usr/share/applications/${appId}.desktop"; gio launch "$f"'`
+                    Hyprland.dispatch(`exec [workspace ${ws} silent] ${cmd}`)
+                }
+            }
+
+            function onAppDragCancelled() {
+                contentFade.appDragging = false
+                dragFloatIcon.visible = false
+                if (overviewLoader.item) overviewLoader.item.appDragHoverWorkspace = -1
+            }
+        }
+
         StyledFlickable {
             id: flickable
             anchors.fill: parent
@@ -90,11 +150,11 @@ Scope {
             contentHeight: columnLayout.implicitHeight
             clip: true
             visible: true
+            interactive: false
             boundsBehavior: Flickable.DragAndOvershootBounds
 
             onContentYChanged: {
                 // Drag-overshoot past the top while expanded → collapse.
-                // Wheel-based collapse is handled by wheelOverlay below.
                 if (appDrawer.expanded && contentY < -30) {
                     appDrawer.expanded = false;
                     appDrawer.searchText = "";
@@ -209,7 +269,6 @@ Scope {
                         ? columnLayout.cachedOverviewWidth
                         : Math.min(1200, flickable.width - 40)
                     visible: (panelWindow.searchingText == "")
-                    // But hide it when searching and not expanded (search results take priority)
                     opacity: (panelWindow.searchingText != "" && !appDrawer.expanded) ? 0 : 1
                     Layout.maximumHeight: (panelWindow.searchingText != "" && !appDrawer.expanded) ? 0 : implicitHeight
                         
@@ -237,19 +296,6 @@ Scope {
         }
 
         // ── Wheel-event interceptor ──────────────────────────────────────────
-        // Sits at z:100 — above the StyledFlickable and all its descendants,
-        // including StyledFlickable's inner MouseArea (which would otherwise
-        // consume every wheel event). Qt hit-tests siblings by z-order, so
-        // this MouseArea is evaluated first.
-        //
-        //  acceptedButtons: Qt.NoButton  — mouse presses pass through to lower-z
-        //                                  items (app icon buttons, etc.)
-        //  propagateComposedEvents: true — click/release also fall through
-        //
-        //  Scroll DOWN while collapsed     → expand drawer
-        //  Scroll UP  at grid+outer top    → collapse drawer
-        //  Otherwise                       → scroll grid (expanded)
-        //                                    or outer flickable (collapsed)
         MouseArea {
             id: wheelOverlay
             anchors.fill: flickable
@@ -350,35 +396,22 @@ Scope {
     GlobalShortcut {
         name: "searchToggle"
         description: "Toggles search on press"
-
-        onPressed: {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
-        }
+        onPressed: { GlobalStates.overviewOpen = !GlobalStates.overviewOpen; }
     }
     GlobalShortcut {
         name: "overviewWorkspacesClose"
         description: "Closes overview on press"
-
-        onPressed: {
-            GlobalStates.overviewOpen = false;
-        }
+        onPressed: { GlobalStates.overviewOpen = false; }
     }
     GlobalShortcut {
         name: "overviewWorkspacesToggle"
         description: "Toggles overview on press"
-
-        onPressed: {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
-        }
+        onPressed: { GlobalStates.overviewOpen = !GlobalStates.overviewOpen; }
     }
     GlobalShortcut {
         name: "searchToggleRelease"
         description: "Toggles search on release"
-
-        onPressed: {
-            GlobalStates.superReleaseMightTrigger = true;
-        }
-
+        onPressed: { GlobalStates.superReleaseMightTrigger = true; }
         onReleased: {
             if (!GlobalStates.superReleaseMightTrigger) {
                 GlobalStates.superReleaseMightTrigger = true;
@@ -390,26 +423,16 @@ Scope {
     GlobalShortcut {
         name: "searchToggleReleaseInterrupt"
         description: "Interrupts possibility of search being toggled on release. " + "This is necessary because GlobalShortcut.onReleased in quickshell triggers whether or not you press something else while holding the key. " + "To make sure this works consistently, use binditn = MODKEYS, catchall in an automatically triggered submap that includes everything."
-
-        onPressed: {
-            GlobalStates.superReleaseMightTrigger = false;
-        }
+        onPressed: { GlobalStates.superReleaseMightTrigger = false; }
     }
     GlobalShortcut {
         name: "overviewClipboardToggle"
         description: "Toggle clipboard query on overview widget"
-
-        onPressed: {
-            overviewScope.toggleClipboard();
-        }
+        onPressed: { overviewScope.toggleClipboard(); }
     }
-
     GlobalShortcut {
         name: "overviewEmojiToggle"
         description: "Toggle emoji query on overview widget"
-
-        onPressed: {
-            overviewScope.toggleEmojis();
-        }
+        onPressed: { overviewScope.toggleEmojis(); }
     }
 }

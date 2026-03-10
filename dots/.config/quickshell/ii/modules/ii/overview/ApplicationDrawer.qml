@@ -39,6 +39,15 @@ Item {
     property real iconSize: root.expanded ? 75 : 50
     property real spacing: root.expanded ? 45 : 30
     
+    // Drag-to-workspace signals — Overview.qml listens to these.
+    // All positions are in scene (window-root) coordinates.
+    signal appDragUpdate(var app, real sceneX, real sceneY)
+    signal appDropped(string appId, real sceneX, real sceneY)
+    signal appDragCancelled()
+
+    // True while the user is dragging an app icon
+    property bool _isDraggingApp: false
+
     // Context menu state
     property var contextMenuApp: null
     property bool contextMenuVisible: false
@@ -372,6 +381,88 @@ Item {
                         StyledToolTip {
                             text: modelData.name + (modelData.description ? "\n" + modelData.description : "")
                         }
+                    }
+                }
+
+                // Drag-detection overlay — sibling of appGrid, z:1 wins hit-testing.
+                // Does NOT use Drag/DropArea. Instead emits signals with scene coords
+                // so Overview.qml can do all the workspace-hit detection centrally.
+                MouseArea {
+                    id: gridOverlay
+                    anchors.fill: parent
+                    z: 1
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    cursorShape: Qt.PointingHandCursor
+                    preventStealing: true
+
+                    property var  _app: null
+                    property string _appId: ""
+                    property real _startX: 0
+                    property real _startY: 0
+                    property bool _dragging: false
+                    readonly property real _threshold: 20
+
+                    onPressed: (mouse) => {
+                        _dragging = false
+                        _appId = ""
+                        _startX = mouse.x
+                        _startY = mouse.y
+
+                        if (mouse.button === Qt.RightButton) {
+                            const item = appGrid.itemAt(mouse.x, mouse.y)
+                            const app = item ? item.modelData : null
+                            if (app) {
+                                const sp = gridOverlay.mapToItem(null, mouse.x, mouse.y)
+                                const lp = root.mapFromItem(null, sp.x, sp.y)
+                                root.contextMenuPosition = Qt.point(lp.x, lp.y)
+                                root.contextMenuApp = app
+                                root.contextMenuVisible = true
+                            }
+                            mouse.accepted = true
+                            return
+                        }
+
+                        const item = appGrid.itemAt(mouse.x + appGrid.contentX, mouse.y + appGrid.contentY)
+                        _app = item ? item.modelData : null
+                        if (_app) {
+                            _appId = _app.id || ""
+                        }
+                    }
+
+                    onPositionChanged: (mouse) => {
+                        if (!_app) return
+                        const dx = mouse.x - _startX
+                        const dy = mouse.y - _startY
+                        if (!_dragging && (dx*dx + dy*dy) > _threshold*_threshold) {
+                            _dragging = true
+                            root._isDraggingApp = true
+                        }
+                        if (_dragging) {
+                            const sp = gridOverlay.mapToItem(null, mouse.x, mouse.y)
+                            root.appDragUpdate(_app, sp.x, sp.y)
+                        }
+                    }
+
+                    onReleased: (mouse) => {
+                        if (_dragging) {
+                            const sp = gridOverlay.mapToItem(null, mouse.x, mouse.y)
+                            root.appDropped(_appId, sp.x, sp.y)
+                        } else if (_app && mouse.button === Qt.LeftButton) {
+                            GlobalStates.overviewOpen = false
+                            _app.execute()
+                        }
+                        _app = null
+                        _appId = ""
+                        _dragging = false
+                        root._isDraggingApp = false
+                    }
+
+                    onCanceled: {
+                        if (_dragging) root.appDragCancelled()
+                        _app = null
+                        _appId = ""
+                        _dragging = false
+                        root._isDraggingApp = false
                     }
                 }
             }
