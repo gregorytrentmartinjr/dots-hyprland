@@ -23,8 +23,10 @@ depends=(
   power-profiles-daemon
   topgrade
   cpio
-  ksshaskpass
-  # Used in install script
   rsync
-  go-yq # https://github.com/mikefarah/yq
+  go-yq
+  blueman
+  gnome-keyring
+  networkmanager
+  hyprpolkitagent
 )

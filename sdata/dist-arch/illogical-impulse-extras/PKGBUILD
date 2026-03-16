@@ -29,5 +29,4 @@ optdepends=(
   'gimp: Image editor'
   'fastfetch: System info'
   'topgrade: System updater'
-  'ksshaskpass: SSH password prompt'
 )
