@@ -39,6 +39,7 @@ depends=(
   qt6-translations
   qt6-virtualkeyboard
   qt6-wayland
+  kirigami
   syntax-highlighting
 )
 makedepends=(
