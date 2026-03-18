@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Restore a previously saved Hyprland session.
 # Reads the session file and relaunches each application on its
-# original workspace. Position/size are restored via window rules.
+# original workspace using per-exec window rules to avoid conflicts.
 
 SESSION_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/hyprland-session.json"
+export SESSION_FILE
 
 if [[ ! -f "$SESSION_FILE" ]]; then
     echo "No session file found at $SESSION_FILE"
@@ -21,7 +22,7 @@ echo "Restoring $count windows..."
 python3 -c '
 import json, subprocess, shlex, os, sys
 
-session_file = os.environ.get("SESSION_FILE", os.path.expanduser("~/.local/state/hyprland-session.json"))
+session_file = os.environ["SESSION_FILE"]
 with open(session_file) as f:
     windows = json.load(f)
 
@@ -37,7 +38,7 @@ for w in windows:
     size = w.get("size", [0, 0])
     fullscreen = w.get("fullscreen", 0)
 
-    # Add temporary window rules to place the window correctly
+    # Build per-exec rule string (avoids global windowrulev2 conflicts)
     rules = []
     if workspace and workspace > 0:
         rules.append(f"workspace {workspace} silent")
@@ -52,27 +53,23 @@ for w in windows:
     elif fullscreen == 2:
         rules.append("maximize")
 
-    # Apply rules for the window class
-    for rule in rules:
-        subprocess.run(
-            ["hyprctl", "keyword", "windowrulev2", f"{rule},class:^({cls})$"],
-            capture_output=True
-        )
-
-    # Launch the application
     shell_cmd = " ".join(shlex.quote(a) for a in cmd)
-    subprocess.Popen(
-        ["bash", "-c", f"exec {shell_cmd}"],
-        start_new_session=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+
+    # Use hyprctl dispatch exec with inline rules so each window
+    # gets its own set of rules without affecting other windows
+    rule_str = "; ".join(rules)
+    if rule_str:
+        exec_arg = f"[{rule_str}] {shell_cmd}"
+    else:
+        exec_arg = shell_cmd
+
+    subprocess.run(
+        ["hyprctl", "dispatch", "exec", "--", exec_arg],
+        capture_output=True
     )
 
     print(f"  Launched: {cls} on workspace {workspace}")
 ' 2>&1
-
-# Clear temporary rules after a delay so they don't affect future windows
-(sleep 10 && hyprctl reload) &
 
 # Clear the session file after restoring so we don't double-restore
 rm -f "$SESSION_FILE"
