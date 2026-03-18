@@ -4,6 +4,7 @@
 # command line that launched it (read from /proc/<pid>/cmdline).
 
 SESSION_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/hyprland-session.json"
+export SESSION_FILE
 mkdir -p "$(dirname "$SESSION_FILE")"
 
 clients_json=$(hyprctl clients -j 2>/dev/null)

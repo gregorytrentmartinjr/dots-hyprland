@@ -66,8 +66,9 @@ Singleton {
     }
 
     function hibernate() {
-        saveSession();
-        Quickshell.execDetached(["bash", "-c", `systemctl hibernate || loginctl hibernate`]);
+        _saveAndThen(() => {
+            Quickshell.execDetached(["bash", "-c", `systemctl hibernate || loginctl hibernate`]);
+        });
     }
 
     function poweroff() {
