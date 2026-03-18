@@ -38,7 +38,7 @@ for w in windows:
     size = w.get("size", [0, 0])
     fullscreen = w.get("fullscreen", 0)
 
-    # Build per-exec rule string (avoids global windowrulev2 conflicts)
+    # Build per-exec rule string (uses inline exec rules, not global windowrule)
     rules = []
     if workspace and workspace > 0:
         rules.append(f"workspace {workspace} silent")
