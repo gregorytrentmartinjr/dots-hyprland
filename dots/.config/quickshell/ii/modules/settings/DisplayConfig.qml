@@ -87,6 +87,14 @@ ContentPage {
     function applyMonitorChanges(monitorName) {
         let m = pendingChanges[monitorName];
         if (!m) return;
+        // Check if any monitor's scale was changed from its current value
+        let scaleChanged = false;
+        monitors.forEach(mon => {
+            let p = pendingChanges[mon.name] ?? {};
+            if (p.scale !== undefined && Math.abs(p.scale - mon.scale) > 0.001) {
+                scaleChanged = true;
+            }
+        });
         // Build full monitors.conf content from all pending changes
         let lines = [];
         monitors.forEach(mon => {
@@ -94,6 +102,7 @@ ContentPage {
             lines.push(buildMonitorLine(mon.name, p, mon));
         });
         let content = lines.join("\n") + "\n";
+        writeProc.disableAutoScale = scaleChanged;
         writeProc.content = content;
         writeProc.running = false;
         writeProc.running = true;
@@ -216,13 +225,19 @@ ContentPage {
     Process {
         id: writeProc
         property string content: ""
+        property bool disableAutoScale: false
         command: ["python3", "-c", `
-import sys
+import sys, os
 path = sys.argv[1]
 content = sys.argv[2]
+disable_auto_scale = sys.argv[3] == "1"
 with open(path, 'w') as f:
     f.write(content)
-`, displayConfigPage.monitorsConfPath, content]
+if disable_auto_scale:
+    flag = os.path.join(os.path.dirname(path), '.no_auto_scale')
+    with open(flag, 'w') as f:
+        f.write('')
+`, displayConfigPage.monitorsConfPath, content, disableAutoScale ? "1" : "0"]
         onExited: {
             reloadProc.running = false;
             reloadProc.running = true;
