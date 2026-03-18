@@ -427,6 +427,10 @@ Singleton {
                 }
             }
 
+            property JsonObject session: JsonObject {
+                property bool saveRestore: false // Save open apps on logout/reboot and restore them on next login
+            }
+
             property JsonObject lock: JsonObject {
                 property bool useHyprlock: false
                 property bool launchOnStartup: false

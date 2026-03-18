@@ -382,6 +382,24 @@ ContentPage {
         }
     }
     */
+    // ── Session ───────────────────────────────────────────────────────────────
+    ContentSection {
+        icon: "restart_alt"
+        title: Translation.tr("Session")
+
+        ConfigSwitch {
+            buttonIcon: "save"
+            text: Translation.tr("Save and restore apps on logout/reboot")
+            checked: Config.options.session.saveRestore
+            onCheckedChanged: {
+                Config.options.session.saveRestore = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("When enabled, your open applications and their layout will be saved before logout, reboot, or shutdown, and restored on next login")
+            }
+        }
+    }
+
     // ── Left Sidebar ──────────────────────────────────────────────────────────
     ContentSection {
         icon: "side_navigation"
