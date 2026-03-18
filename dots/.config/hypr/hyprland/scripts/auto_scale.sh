@@ -45,6 +45,12 @@ find_edid_for_connector() {
 # Main
 # ---------------------------------------------------------------------------
 apply_auto_scale() {
+    local opt_out="$HOME/.config/hypr/.no_auto_scale"
+    if [ -f "$opt_out" ]; then
+        echo "auto_scale: opt-out flag found ($opt_out), skipping" >&2
+        return 0
+    fi
+
     local monitors
     monitors=$(hyprctl monitors -j 2>/dev/null) || {
         echo "auto_scale: hyprctl not available" >&2
