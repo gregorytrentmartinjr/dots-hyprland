@@ -59,8 +59,8 @@ ContentPage {
                         Config.options.time.dateFormat = newValue;
                     }
                     options: [
-                        { displayName: Translation.tr("Date First dd/MM"),  value: "ddd dd/MM" },
-                        { displayName: Translation.tr("Month First MM/dd"), value: "ddd MM/dd" },
+                        { displayName: Translation.tr("Date First dd/MM"),  value: "ddd, dd/MM" },
+                        { displayName: Translation.tr("Month First MM/dd"), value: "ddd, MM/dd" },
                     ]
                 }
             }
