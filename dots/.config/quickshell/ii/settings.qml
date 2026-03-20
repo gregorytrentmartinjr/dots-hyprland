@@ -194,7 +194,7 @@ ApplicationWindow {
                 Component.onCompleted: initialized = true
                 Layout.fillHeight: true
                 Layout.margins: 5
-                implicitWidth: navRail.expanded ? 150 : fab.baseSize
+                implicitWidth: navRail.expanded ? 150 : 56
                 Behavior on implicitWidth {
                     enabled: navRailWrapper.initialized
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
