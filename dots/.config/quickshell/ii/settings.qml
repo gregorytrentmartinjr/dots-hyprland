@@ -190,15 +190,9 @@ ApplicationWindow {
             spacing: contentPadding
             Item {
                 id: navRailWrapper
-                property bool initialized: false
-                Component.onCompleted: initialized = true
                 Layout.fillHeight: true
                 Layout.margins: 5
-                implicitWidth: navRail.expanded ? 150 : 56
-                Behavior on implicitWidth {
-                    enabled: navRailWrapper.initialized
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-                }
+                implicitWidth: 150
                 Flickable {
                     id: navRailFlickable
                     anchors.fill: parent
@@ -221,7 +215,7 @@ ApplicationWindow {
                             required property var modelData
                             toggled: root.currentPage === index
                             onPressed: root.currentPage = index
-                            expanded: navRail.expanded
+                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -239,7 +233,7 @@ ApplicationWindow {
                             required property var modelData
                             toggled: root.currentPage === (index + 3)
                             onPressed: root.currentPage = (index + 3)
-                            expanded: navRail.expanded
+                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -257,7 +251,7 @@ ApplicationWindow {
                             required property var modelData
                             toggled: root.currentPage === (index + 6)
                             onPressed: root.currentPage = (index + 6)
-                            expanded: navRail.expanded
+                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -275,7 +269,7 @@ ApplicationWindow {
                             required property var modelData
                             toggled: root.currentPage === (index + 9)
                             onPressed: root.currentPage = (index + 9)
-                            expanded: navRail.expanded
+                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -293,7 +287,7 @@ ApplicationWindow {
                             required property var modelData
                             toggled: root.currentPage === (index + 12)
                             onPressed: root.currentPage = (index + 12)
-                            expanded: navRail.expanded
+                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
