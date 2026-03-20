@@ -190,10 +190,13 @@ ApplicationWindow {
             spacing: contentPadding
             Item {
                 id: navRailWrapper
+                property bool initialized: false
+                Component.onCompleted: initialized = true
                 Layout.fillHeight: true
                 Layout.margins: 5
                 implicitWidth: navRail.expanded ? 150 : fab.baseSize
                 Behavior on implicitWidth {
+                    enabled: navRailWrapper.initialized
                     animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
                 }
                 Flickable {
