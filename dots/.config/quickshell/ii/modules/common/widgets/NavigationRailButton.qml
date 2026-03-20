@@ -19,6 +19,8 @@ TabButton {
     property real baseSize: 56
     property real baseHighlightHeight: 32
     property real highlightCollapsedTopMargin: 8
+    property bool initialized: false
+    Component.onCompleted: initialized = true
     padding: 0
 
     // The navigation item’s target area always spans the full width of the
@@ -71,6 +73,7 @@ TabButton {
                 }
             }
             transitions: Transition {
+                enabled: root.initialized
                 AnchorAnimation {
                     duration: Appearance.animation.elementMoveFast.duration
                     easing.type: Appearance.animation.elementMoveFast.type
@@ -135,6 +138,7 @@ TabButton {
                 }
             }
             transitions: Transition {
+                enabled: root.initialized
                 AnchorAnimation {
                     duration: Appearance.animation.elementMoveFast.duration
                     easing.type: Appearance.animation.elementMoveFast.type
