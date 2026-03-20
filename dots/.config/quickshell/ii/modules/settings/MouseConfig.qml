@@ -16,7 +16,7 @@ ContentPage {
     property bool leftHanded:      false
     property bool accelEnabled:    true
     property bool naturalScroll:   false
-    property bool naturalScrollTP: false
+    property bool naturalScrollTP: true
     property real sensitivity:     0.0
 
     // 2 cards * 150px + 16px gap
