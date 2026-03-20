@@ -42,7 +42,7 @@ WindowDialog {
                 right: parent.right
             }
             iconSize: Appearance.font.pixelSize.larger
-            buttonIcon: "lightbulb"
+            buttonIcon: "check"
             text: Translation.tr("Enable now")
             checked: Hyprsunset.active
             onCheckedChanged: {
