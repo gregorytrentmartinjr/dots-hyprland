@@ -202,7 +202,7 @@ ApplicationWindow {
                     boundsBehavior: Flickable.StopAtBounds
                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOff }
 
-                NavigationRail { // Window content with navigation rail and content pane
+                ColumnLayout {
                     id: navRail
                     width: navRailFlickable.width
                     spacing: 0
@@ -210,12 +210,11 @@ ApplicationWindow {
                     // Group 1: Quick, Wi-Fi, Bluetooth (Indices 0, 1, 2)
                     Repeater {
                         model: root.pages.slice(0, 3)
-                        NavigationRailButton {
+                        SettingsNavButton {
                             required property var index
                             required property var modelData
                             toggled: root.currentPage === index
                             onPressed: root.currentPage = index
-                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -228,12 +227,11 @@ ApplicationWindow {
                     // Group 2: Bar, Background, Interface (Indices 3, 4, 5)
                     Repeater {
                         model: root.pages.slice(3, 6)
-                        NavigationRailButton {
+                        SettingsNavButton {
                             required property var index
                             required property var modelData
                             toggled: root.currentPage === (index + 3)
                             onPressed: root.currentPage = (index + 3)
-                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -246,12 +244,11 @@ ApplicationWindow {
                     // Group 3: Display, Power, Mouse (Indices 6, 7, 8)
                     Repeater {
                         model: root.pages.slice(6, 9)
-                        NavigationRailButton {
+                        SettingsNavButton {
                             required property var index
                             required property var modelData
                             toggled: root.currentPage === (index + 6)
                             onPressed: root.currentPage = (index + 6)
-                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -264,12 +261,11 @@ ApplicationWindow {
                     // Group 4: Services, Update, Accounts (Indices 9, 10, 11)
                     Repeater {
                         model: root.pages.slice(9, 12)
-                        NavigationRailButton {
+                        SettingsNavButton {
                             required property var index
                             required property var modelData
                             toggled: root.currentPage === (index + 9)
                             onPressed: root.currentPage = (index + 9)
-                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
@@ -282,17 +278,16 @@ ApplicationWindow {
                     // Group 5: About (Index 12)
                     Repeater {
                         model: root.pages.slice(12)
-                        NavigationRailButton {
+                        SettingsNavButton {
                             required property var index
                             required property var modelData
                             toggled: root.currentPage === (index + 12)
                             onPressed: root.currentPage = (index + 12)
-                            expanded: true
                             buttonIcon: modelData.icon
                             buttonText: modelData.name
                         }
                     }
-                } // NavigationRail
+                } // ColumnLayout navRail
                 } // Flickable
             }
             Rectangle { // Content container
@@ -362,6 +357,81 @@ ApplicationWindow {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Inline nav button for settings — same visual style as NavigationRailButton
+    // in expanded mode but without states/transitions to avoid animation on first open.
+    component SettingsNavButton: TabButton {
+        id: navBtn
+        property bool toggled: false
+        property string buttonIcon
+        property string buttonText
+
+        readonly property real baseSize: 56
+        readonly property real visualWidth: baseSize + 20 + navBtnText.implicitWidth
+
+        Layout.fillWidth: true
+        implicitHeight: baseSize
+        padding: 0
+        background: null
+        PointingHandInteraction {}
+
+        contentItem: Item {
+            anchors {
+                top: parent.top
+                bottom: parent.bottom
+                left: parent.left
+            }
+            implicitWidth: navBtn.visualWidth
+
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                implicitWidth: navBtn.visualWidth
+                radius: Appearance.rounding.full
+                color: navBtn.toggled ?
+                    (navBtn.down ? Appearance.colors.colSecondaryContainerActive : navBtn.hovered ? Appearance.colors.colSecondaryContainerHover : Appearance.colors.colSecondaryContainer) :
+                    (navBtn.down ? Appearance.colors.colLayer1Active : navBtn.hovered ? Appearance.colors.colLayer1Hover : CF.ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1))
+
+                Behavior on color {
+                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                }
+            }
+
+            Item {
+                id: navBtnIconArea
+                implicitWidth: navBtn.baseSize
+                implicitHeight: 32
+                anchors {
+                    left: parent.left
+                    verticalCenter: parent.verticalCenter
+                }
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    iconSize: 24
+                    fill: navBtn.toggled ? 1 : 0
+                    font.weight: (navBtn.toggled || navBtn.hovered) ? Font.DemiBold : Font.Normal
+                    text: navBtn.buttonIcon
+                    color: navBtn.toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer1
+
+                    Behavior on color {
+                        animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                    }
+                }
+            }
+
+            StyledText {
+                id: navBtnText
+                anchors {
+                    left: navBtnIconArea.right
+                    verticalCenter: navBtnIconArea.verticalCenter
+                }
+                text: navBtn.buttonText
+                font.pixelSize: 14
+                color: Appearance.colors.colOnLayer1
             }
         }
     }

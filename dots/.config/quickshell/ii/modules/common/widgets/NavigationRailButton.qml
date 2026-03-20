@@ -21,14 +21,16 @@ TabButton {
     property real highlightCollapsedTopMargin: 8
     padding: 0
 
-    // The navigation item's target area always spans the full width of the
+    // The navigation item’s target area always spans the full width of the
     // nav rail, even if the item container hugs its contents.
     Layout.fillWidth: true
+    // implicitWidth: contentItem.implicitWidth
     implicitHeight: baseSize
 
     background: null
     PointingHandInteraction {}
 
+    // Real stuff
     contentItem: Item {
         id: buttonContent
         anchors {
@@ -37,22 +39,51 @@ TabButton {
             left: parent.left
             right: undefined
         }
-
+        
         implicitWidth: root.visualWidth
-        implicitHeight: root.expanded ? itemIconBackground.implicitHeight : itemIconBackground.implicitHeight + itemText.implicitHeight
+        implicitHeight: root.expanded ? itemIconBackground.implicitHeight : itemIconBackground.implicitHeight + itemText.implicitHeight 
 
         Rectangle {
             id: itemBackground
-            anchors.top: root.expanded ? buttonContent.top : itemIconBackground.top
-            anchors.left: root.expanded ? buttonContent.left : itemIconBackground.left
-            anchors.bottom: root.expanded ? buttonContent.bottom : itemIconBackground.bottom
+            anchors.top: itemIconBackground.top
+            anchors.left: itemIconBackground.left
+            anchors.bottom: itemIconBackground.bottom
             implicitWidth: root.visualWidth
             radius: Appearance.rounding.full
-            color: toggled ?
+            color: toggled ? 
                 root.showToggledHighlight ?
                     (root.down ? Appearance.colors.colSecondaryContainerActive : root.hovered ? Appearance.colors.colSecondaryContainerHover : Appearance.colors.colSecondaryContainer)
                     : ColorUtils.transparentize(Appearance.colors.colSecondaryContainer) :
                 (root.down ? Appearance.colors.colLayer1Active : root.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1))
+
+            states: State {
+                name: "expanded"
+                when: root.expanded
+                AnchorChanges {
+                    target: itemBackground
+                    anchors.top: buttonContent.top
+                    anchors.left: buttonContent.left
+                    anchors.bottom: buttonContent.bottom
+                }
+                PropertyChanges {
+                    target: itemBackground
+                    implicitWidth: root.visualWidth
+                }
+            }
+            transitions: Transition {
+                AnchorAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                }
+                PropertyAnimation {
+                    target: itemBackground
+                    property: "implicitWidth"
+                    duration: Appearance.animation.elementMove.duration
+                    easing.type: Appearance.animation.elementMove.type
+                    easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
+                }
+            }
 
             Behavior on color {
                 animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
@@ -86,11 +117,29 @@ TabButton {
         StyledText {
             id: itemText
             anchors {
-                top: root.expanded ? undefined : itemIconBackground.bottom
-                topMargin: root.expanded ? undefined : 2
-                horizontalCenter: root.expanded ? undefined : itemIconBackground.horizontalCenter
-                left: root.expanded ? itemIconBackground.right : undefined
-                verticalCenter: root.expanded ? itemIconBackground.verticalCenter : undefined
+                top: itemIconBackground.bottom
+                topMargin: 2
+                horizontalCenter: itemIconBackground.horizontalCenter
+            }
+            states: State {
+                name: "expanded"
+                when: root.expanded
+                AnchorChanges {
+                    target: itemText
+                    anchors {
+                        top: undefined
+                        horizontalCenter: undefined
+                        left: itemIconBackground.right
+                        verticalCenter: itemIconBackground.verticalCenter
+                    }
+                }
+            }
+            transitions: Transition {
+                AnchorAnimation {
+                    duration: Appearance.animation.elementMoveFast.duration
+                    easing.type: Appearance.animation.elementMoveFast.type
+                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                }
             }
             text: buttonText
             font.pixelSize: 14
